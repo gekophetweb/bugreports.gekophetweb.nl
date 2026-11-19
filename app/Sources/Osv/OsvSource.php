@@ -41,7 +41,7 @@ class OsvSource implements IssueSource
     public function sync(Language $language, string $feed, SyncRun $run): void
     {
         $since = SyncCursor::get('osv', $feed) ?? now()->subDays(config('issues.backfill_days'))->toImmutable();
-        [$ids, $newest] = $this->changedSince($feed, $since);
+        [$ids, $newest] = $this->batch($this->changedSince($feed, $since));
 
         foreach (array_chunk($ids, self::CONCURRENCY) as $chunk) {
             $responses = Http::pool(fn (Pool $pool) => array_map(
@@ -65,7 +65,45 @@ class OsvSource implements IssueSource
         }
     }
 
-    /** @return array{list<string>, ?CarbonImmutable} ids modified after $since, and the newest timestamp seen */
+    /**
+     * The oldest issues.osv_batch changes, so a large first import catches up over several runs.
+     * A batch never ends inside a group of records sharing one timestamp, because the cursor is that
+     * timestamp and the next run only takes what is newer.
+     *
+     * @param  list<array{string, CarbonImmutable}>  $changes  newest first
+     * @return array{list<string>, ?CarbonImmutable} ids to fetch, and the cursor to store afterwards
+     */
+    private function batch(array $changes): array
+    {
+        $changes = array_reverse($changes); // oldest first
+        $limit = max(1, (int) config('issues.osv_batch', 1500));
+
+        if (count($changes) > $limit) {
+            $cut = $limit;
+            $boundary = $changes[$cut][1];
+            while ($cut > 0 && $changes[$cut - 1][1]->equalTo($boundary)) {
+                $cut--;
+            }
+            $changes = array_slice($changes, 0, $cut > 0 ? $cut : $this->groupEnd($changes, $limit));
+        }
+
+        $ids = array_keys(array_fill_keys(array_column($changes, 0), true));
+
+        return [$ids, $changes === [] ? null : end($changes)[1]];
+    }
+
+    /** When the first $limit records all share one timestamp, take that whole group. */
+    private function groupEnd(array $changes, int $limit): int
+    {
+        $end = $limit;
+        while ($end < count($changes) && $changes[$end][1]->equalTo($changes[0][1])) {
+            $end++;
+        }
+
+        return $end;
+    }
+
+    /** @return list<array{string, CarbonImmutable}> [id, modified] after $since, newest first */
     private function changedSince(string $ecosystem, CarbonImmutable $since): array
     {
         $response = Http::timeout(60)->withOptions(['stream' => true])->get(sprintf(self::CSV_URL, rawurlencode($ecosystem)));
@@ -73,8 +111,7 @@ class OsvSource implements IssueSource
             throw new RuntimeException("OSV index for $ecosystem could not be fetched (HTTP {$response->status()}).");
         }
 
-        $ids = [];
-        $newest = null;
+        $changes = [];
         foreach ($this->lines($response->toPsrResponse()->getBody()) as $line) {
             [$timestamp, $id] = array_pad(explode(',', trim($line), 2), 2, '');
             if ($id === '') {
@@ -84,14 +121,13 @@ class OsvSource implements IssueSource
             if ($modified->lessThanOrEqualTo($since)) {
                 break; // newest first: everything after this is older
             }
-            $newest ??= $modified;
             if (! config('issues.include_malware') && str_starts_with($id, 'MAL-')) {
-                continue;
+                continue; // skipped before batching, so they do not use up a batch
             }
-            $ids[$id] = true;
+            $changes[] = [$id, $modified];
         }
 
-        return [array_keys($ids), $newest];
+        return $changes;
     }
 
     /** @return \Generator<string> */

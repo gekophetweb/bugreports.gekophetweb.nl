@@ -3,11 +3,13 @@
 use App\Http\Controllers\SsoController;
 use App\Livewire\Admin;
 use App\Livewire\Auth\Login;
+use App\Livewire\Issues;
 use App\Livewire\Setup;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn () => view('welcome'))->name('home');
+Route::get('/', Issues\Index::class)->name('home');
+Route::get('/issues/{issue}', Issues\Show::class)->name('issues.show');
 
 Route::get('/setup/{token}', Setup::class)->name('setup');
 

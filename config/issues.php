@@ -8,6 +8,9 @@ return [
     // OSV "MAL-" ids (malicious packages) run to hundreds of thousands; skipped unless switched on.
     'include_malware' => (bool) env('SYNC_INCLUDE_MALWARE', false),
 
+    // OSV records fetched per run at most; a large first import catches up over several runs.
+    'osv_batch' => (int) env('SYNC_OSV_BATCH', 1500),
+
     // Optional NVD API key: 50 instead of 5 requests per 30 seconds.
     'nvd_api_key' => env('NVD_API_KEY'),
 

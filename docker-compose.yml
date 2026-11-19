@@ -27,7 +27,7 @@ services:
 
   queue:
     <<: *app
-    command: php artisan queue:work --tries=3 --max-time=3600
+    command: php artisan queue:work --tries=3 --timeout=900 --max-time=3600
     healthcheck: { disable: true }
     depends_on:
       app: { condition: service_healthy }

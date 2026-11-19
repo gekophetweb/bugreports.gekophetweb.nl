@@ -162,3 +162,49 @@ it('reports no change when only the modified date differs', function () {
     expect(IssueChange::count())->toBe(0)->and($run->changed_issues)->toBe([])
         ->and(Issue::where('external_id', 'GHSA-82w8-65qw-gch6')->sole()->modified_at->toIso8601ZuluString())->toBe('2026-11-19T11:00:00Z');
 });
+
+it('processes at most one batch per run, oldest first, and resumes', function () {
+    config(['issues.osv_batch' => 1]);
+    fakeOsv();
+
+    $first = runOsv();
+    expect($first->status)->toBe('ok')
+        ->and(Issue::pluck('external_id')->all())->toBe(['GHSA-v4v4-v4v4-v4v4'])
+        ->and(SyncCursor::sole()->cursor->toIso8601ZuluString())->toBe('2026-11-10T10:00:00Z');
+
+    runOsv();
+    expect(Issue::count())->toBe(2)
+        ->and(SyncCursor::sole()->cursor->toIso8601ZuluString())->toBe('2026-11-18T21:00:39Z');
+});
+
+it('never splits records that share a timestamp across batches', function () {
+    config(['issues.osv_batch' => 2]);
+    $csv = "2026-11-18T10:00:00Z,GHSA-82w8-65qw-gch6\n2026-11-18T10:00:00Z,GHSA-v4v4-v4v4-v4v4\n2026-11-17T10:00:00Z,GHSA-old0-old0-old0\n";
+    fakeOsv($csv);
+
+    runOsv();
+    expect(Issue::pluck('external_id')->all())->toBe(['GHSA-old0-old0-old0'])
+        ->and(SyncCursor::sole()->cursor->toIso8601ZuluString())->toBe('2026-11-17T10:00:00Z');
+
+    runOsv();
+    expect(Issue::count())->toBe(3);
+});
+
+it('marks runs left running past the job timeout as interrupted', function () {
+    $stale = SyncRun::create(['source' => 'osv', 'feed' => 'Packagist', 'status' => 'running', 'started_at' => now()->subMinutes(20)]);
+    $fresh = SyncRun::create(['source' => 'osv', 'feed' => 'PyPI', 'status' => 'running', 'started_at' => now()->subMinute()]);
+    fakeOsv();
+
+    runOsv();
+
+    expect($stale->fresh()->status)->toBe('failed')
+        ->and($stale->fresh()->error)->toContain('Interrupted')
+        ->and($fresh->fresh()->status)->toBe('running');
+});
+
+it('lets the unique lock expire and outlasts the job timeout in redis', function () {
+    $job = new SyncFeed(OsvSource::class, 1, 'Packagist');
+
+    expect($job->uniqueFor)->toBe(1800)
+        ->and(config('queue.connections.redis.retry_after'))->toBeGreaterThan($job->timeout);
+});

@@ -33,7 +33,7 @@ services:
     volumes: *dev-code
 
   queue:
-    command: php artisan queue:listen --tries=3   # reloads code for every job
+    command: php artisan queue:listen --tries=1 --timeout=900   # reloads code for every job; syncs can take minutes
     volumes: *dev-code
 
   scheduler:   # schedule:work already starts a fresh process for each task

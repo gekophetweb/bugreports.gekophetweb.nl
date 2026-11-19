@@ -23,6 +23,9 @@ class SyncFeed implements ShouldBeUnique, ShouldQueue
 
     public int $timeout = 900;
 
+    /** A worker killed mid-run must not keep the feed locked forever. */
+    public int $uniqueFor = 1800;
+
     /** @param  class-string<IssueSource>  $sourceClass */
     public function __construct(public string $sourceClass, public int $languageId, public string $feed) {}
 
@@ -35,6 +38,10 @@ class SyncFeed implements ShouldBeUnique, ShouldQueue
     {
         $source = app($this->sourceClass);
         $language = Language::query()->findOrFail($this->languageId);
+
+        // Runs whose worker died (timeout, restart) would otherwise show as running forever.
+        SyncRun::query()->where('status', 'running')->where('started_at', '<', now()->subSeconds($this->timeout))
+            ->update(['status' => 'failed', 'error' => 'Interrupted: the worker stopped before this run finished.', 'finished_at' => now()]);
 
         $run = SyncRun::query()->create([
             'source' => $source->name(),
