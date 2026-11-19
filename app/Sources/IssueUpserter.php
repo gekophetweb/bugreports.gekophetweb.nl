@@ -2,6 +2,7 @@
 
 namespace App\Sources;
 
+use App\Enums\Severity;
 use App\Models\Issue;
 use App\Models\IssueChange;
 use App\Models\SyncRun;
@@ -20,6 +21,18 @@ class IssueUpserter
     {
         return DB::transaction(function () use ($data, $run) {
             $issue = Issue::query()->where('external_id', $data->externalId)->lockForUpdate()->first();
+            $mode = 'same';
+
+            if (! $issue && $data->source === 'nvd') {
+                // An OSV advisory already lists this CVE as an alias: enrich that issue instead.
+                $issue = Issue::query()->withAlias($data->externalId)->lockForUpdate()->first();
+                $mode = 'nvd-into-osv';
+            }
+            if (! $issue && $data->source === 'osv' && $data->aliases !== []) {
+                // The CVE came in from NVD first: the advisory takes over that row.
+                $issue = Issue::query()->where('source', 'nvd')->whereIn('external_id', $data->aliases)->lockForUpdate()->first();
+                $mode = 'osv-takes-over-nvd';
+            }
 
             if (! $issue) {
                 $issue = Issue::query()->create([...$this->attributes($data), 'first_seen_at' => now()]);
@@ -29,7 +42,17 @@ class IssueUpserter
             }
 
             $previousSeverity = $issue->severity;
-            $issue->fill($this->attributes($data));
+            $issue->fill(match ($mode) {
+                'same' => $this->attributes($data),
+                'nvd-into-osv' => $this->scoreIfMissing($issue, $data),
+                'osv-takes-over-nvd' => [
+                    ...$this->attributes($data),
+                    ...($data->cvssScore === null && $data->severity === Severity::Unknown ? [
+                        'severity' => $issue->severity, 'cvss_score' => $issue->cvss_score, 'cvss_vector' => $issue->cvss_vector,
+                    ] : []),
+                    'aliases' => array_values(array_unique([...$data->aliases, $issue->external_id])),
+                ],
+            });
             $changes = $this->meaningfulChanges($issue);
             $issue->save();
             $issue->languages()->syncWithoutDetaching([$data->languageId]);
@@ -45,6 +68,16 @@ class IssueUpserter
 
             return new UpsertResult($issue, false, $changes);
         });
+    }
+
+    /** An NVD CVE only fills in the score of the OSV issue that aliases it when that has none. */
+    private function scoreIfMissing(Issue $issue, IssueData $d): array
+    {
+        if ($issue->cvss_score !== null || $d->cvssScore === null && $d->severity === Severity::Unknown) {
+            return [];
+        }
+
+        return ['severity' => $d->severity, 'cvss_score' => $d->cvssScore, 'cvss_vector' => $d->cvssVector];
     }
 
     /** @return array<string, mixed> */
