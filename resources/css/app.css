@@ -1,0 +1,204 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+@custom-variant dark (@media (prefers-color-scheme: dark));
+
+@theme {
+    --font-sans: 'Archivo', ui-sans-serif, system-ui, sans-serif;
+    --font-narrow: 'Archivo Narrow', 'Archivo', ui-sans-serif, system-ui, sans-serif;
+}
+
+/*
+ * Tokens. Cool paper and ink, one signal blue for actions, and one hue per severity.
+ * The severity hues are the only saturated colours on the page.
+ */
+:root {
+    --paper: #f4f6f8;
+    --surface: #ffffff;
+    --ink: #15202b;
+    --muted: #5a6876;
+    --line: #dde3e9;
+    --signal: #1d5bbf;
+    --sev-critical: #b3123a;
+    --sev-high: #c2410c;
+    --sev-medium: #a16207;
+    --sev-low: #456a86;
+    --sev-unknown: #8a939c;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --paper: #0f1720;
+        --surface: #16212c;
+        --ink: #e6ebf0;
+        --muted: #94a3b2;
+        --line: #26333f;
+        --signal: #7aa7f0;
+        --sev-critical: #ff5c7a;
+        --sev-high: #ff8a4c;
+        --sev-medium: #e0b341;
+        --sev-low: #8fb3d1;
+        --sev-unknown: #8a939c;
+    }
+}
+
+body {
+    background: var(--paper);
+    color: var(--ink);
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+summary:focus-visible {
+    outline: 2px solid var(--signal);
+    outline-offset: 2px;
+}
+
+@layer components {
+    .input {
+        @apply block w-full rounded-md border px-3 py-2 text-sm;
+        border-color: var(--line);
+        background: var(--surface);
+        color: var(--ink);
+    }
+
+    .btn-primary {
+        @apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-semibold disabled:opacity-50;
+        background: var(--signal);
+        color: #fff;
+    }
+    @media (prefers-color-scheme: dark) {
+        .btn-primary { color: #0f1720; }
+    }
+
+    .btn-secondary {
+        @apply inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium;
+        border-color: var(--line);
+        background: var(--surface);
+    }
+
+    .card {
+        @apply rounded-lg border p-6;
+        border-color: var(--line);
+        background: var(--surface);
+    }
+
+    .tag {
+        @apply inline-block rounded px-1.5 py-0.5 text-xs font-medium;
+        background: color-mix(in srgb, var(--muted) 14%, transparent);
+        color: var(--ink);
+    }
+
+    /* --- The score block: the page's one loud element --- */
+    .score {
+        --sev: var(--sev-unknown);
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        border-left: 4px solid var(--sev);
+        padding-left: 0.75rem;
+        min-width: 4.75rem;
+    }
+    .score--critical { --sev: var(--sev-critical); }
+    .score--high { --sev: var(--sev-high); }
+    .score--medium { --sev: var(--sev-medium); }
+    .score--low { --sev: var(--sev-low); }
+    .score__num {
+        font-family: var(--font-narrow);
+        font-weight: 700;
+        font-size: 2rem;
+        line-height: 1;
+        letter-spacing: -0.01em;
+        font-variant-numeric: tabular-nums;
+        color: var(--sev);
+    }
+    .score__label {
+        margin-top: 0.25rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--sev);
+    }
+    .score--lg { border-left-width: 6px; padding-left: 1rem; min-width: 7rem; }
+    .score--lg .score__num { font-size: 3.75rem; }
+    .score--lg .score__label { font-size: 0.875rem; }
+
+    /* --- Feed --- */
+    .feed-layout {
+        @apply grid gap-8 py-8 lg:grid-cols-[15rem_1fr];
+    }
+    .rail-toggle__summary {
+        @apply cursor-pointer list-none text-sm font-semibold lg:hidden;
+    }
+    .rail-toggle__summary::-webkit-details-marker { display: none; }
+    .filters { @apply mt-4 space-y-6 lg:mt-0; }
+    .filters__title { @apply mb-2 block text-sm font-semibold; }
+
+    .seg { @apply flex flex-wrap gap-1; }
+    .seg__item { @apply cursor-pointer; }
+    .seg__item input { @apply sr-only; }
+    .seg__item span {
+        @apply inline-block rounded-md border px-2.5 py-1 text-sm;
+        border-color: var(--line);
+        background: var(--surface);
+    }
+    .seg__item input:checked + span { border-color: var(--ink); background: var(--ink); color: var(--paper); }
+    .seg__item input:focus-visible + span { outline: 2px solid var(--signal); outline-offset: 2px; }
+    .seg__item--critical input:checked + span { background: var(--sev-critical); border-color: var(--sev-critical); color: #fff; }
+    .seg__item--high input:checked + span { background: var(--sev-high); border-color: var(--sev-high); color: #fff; }
+
+    .feed-head { @apply flex items-baseline gap-4 border-b pb-3; border-color: var(--line); }
+    .feed-head__title {
+        font-family: var(--font-narrow);
+        font-weight: 700;
+        font-size: clamp(1.75rem, 3vw, 2.25rem);
+        line-height: 1.1;
+    }
+    .feed-head__count { @apply ml-auto text-sm tabular-nums; color: var(--muted); }
+
+    .feed { @apply divide-y; border-color: var(--line); }
+    .feed > * { border-color: var(--line); }
+    .row { @apply grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 py-4 sm:grid-cols-[auto_1fr_auto]; }
+    .row__body { @apply min-w-0; }
+    .row__id { @apply flex flex-wrap items-baseline gap-x-2 text-sm; }
+    .row__link { font-family: var(--font-narrow); font-weight: 600; color: var(--signal); }
+    .row__link:hover { text-decoration: underline; text-underline-offset: 2px; }
+    .row__alias { color: var(--muted); font-family: var(--font-narrow); }
+    .row__title { @apply mt-0.5 font-medium leading-snug; max-width: 70ch; }
+    .row__meta { @apply mt-1.5 flex flex-wrap items-center gap-2 text-sm; color: var(--muted); }
+    .row__pkgs { @apply truncate; max-width: 40ch; }
+    .row__side { @apply col-start-2 flex items-center gap-4 text-sm sm:col-start-3 sm:flex-col sm:items-end sm:gap-1; color: var(--muted); }
+    .row__date { @apply tabular-nums whitespace-nowrap; }
+    .row__source { @apply underline underline-offset-2; }
+    .star { @apply rounded p-1; color: var(--muted); }
+    .star[aria-pressed='true'] { color: var(--sev-medium); }
+    .star:hover { color: var(--ink); }
+
+    .empty { @apply mt-6 rounded-lg border border-dashed p-8 text-center; border-color: var(--line); }
+
+    /* --- Detail --- */
+    .detail { @apply mx-auto max-w-5xl py-8; }
+    .detail__head { @apply mt-6 flex flex-col gap-6 sm:flex-row sm:items-start; }
+    .detail__id { @apply flex flex-wrap items-center gap-3; font-family: var(--font-narrow); font-weight: 600; color: var(--muted); }
+    .detail__title { @apply mt-1 text-2xl font-semibold leading-tight sm:text-3xl; max-width: 40ch; }
+    .detail__actions { @apply mt-6 flex flex-wrap gap-3; }
+    .detail__grid { @apply mt-10 grid gap-10 lg:grid-cols-[1fr_18rem]; }
+    .prose-text { @apply leading-relaxed; max-width: 72ch; }
+    .facts { @apply space-y-4 border-t pt-4 text-sm lg:border-t-0 lg:border-l lg:pl-6 lg:pt-0; border-color: var(--line); }
+    .facts dt { @apply font-semibold; }
+    .facts dd { @apply mt-0.5; color: var(--muted); }
+    .refs { @apply mt-3 space-y-2 text-sm; }
+    .refs a { color: var(--signal); }
+    .status-pill { @apply rounded px-2 py-0.5 text-xs font-semibold; background: color-mix(in srgb, var(--muted) 18%, transparent); }
+    .status-pill--in_progress, .status-pill--planned { background: color-mix(in srgb, var(--signal) 18%, transparent); color: var(--signal); }
+    .status-pill--done { background: color-mix(in srgb, #15803d 18%, transparent); color: #15803d; }
+    .status-pill--declined { background: var(--ink); color: var(--paper); }
+    .withdrawn { @apply rounded px-2 py-0.5 text-xs font-semibold; background: var(--ink); color: var(--paper); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+}

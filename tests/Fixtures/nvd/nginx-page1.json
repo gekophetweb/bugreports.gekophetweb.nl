@@ -1,0 +1,71 @@
+{
+    "resultsPerPage": 2000,
+    "startIndex": 0,
+    "totalResults": 2001,
+    "format": "NVD_CVE",
+    "version": "2.0",
+    "vulnerabilities": [
+        {
+            "cve": {
+                "id": "CVE-2023-44487",
+                "sourceIdentifier": "cve@mitre.org",
+                "published": "2023-10-10T14:15:10.883",
+                "lastModified": "2026-08-11T19:37:30.880",
+                "vulnStatus": "Analyzed",
+                "cveTags": [],
+                "descriptions": [
+                    {
+                        "lang": "en",
+                        "value": "The HTTP/2 protocol allows a denial of service (server resource consumption) because request cancellation can reset many streams quickly, as exploited in the wild in August through October 2023."
+                    }
+                ],
+                "metrics": {
+                    "cvssMetricV31": [
+                        {
+                            "source": "nvd@nist.gov",
+                            "type": "Primary",
+                            "cvssData": {
+                                "version": "3.1",
+                                "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+                                "baseScore": 7.5,
+                                "baseSeverity": "HIGH",
+                                "attackVector": "NETWORK",
+                                "attackComplexity": "LOW",
+                                "privilegesRequired": "NONE",
+                                "userInteraction": "NONE",
+                                "scope": "UNCHANGED",
+                                "confidentialityImpact": "NONE",
+                                "integrityImpact": "NONE",
+                                "availabilityImpact": "HIGH"
+                            },
+                            "exploitabilityScore": 3.9,
+                            "impactScore": 3.6
+                        }
+                    ]
+                },
+                "cisaExploitAdd": "2023-10-10",
+                "cisaActionDue": "2023-10-31",
+                "cisaRequiredAction": "Apply mitigations per vendor instructions, follow applicable BOD 22-01 guidance for cloud services, or discontinue use of the product if mitigations are unavailable.",
+                "cisaVulnerabilityName": "HTTP/2 Rapid Reset Attack Vulnerability",
+                "references": [
+                    {
+                        "url": "http://www.openwall.com/lists/oss-security/2023/10/10/6",
+                        "source": "cve@mitre.org",
+                        "tags": [
+                            "Mailing List",
+                            "Third Party Advisory"
+                        ]
+                    },
+                    {
+                        "url": "http://www.openwall.com/lists/oss-security/2023/10/10/7",
+                        "source": "cve@mitre.org",
+                        "tags": [
+                            "Mailing List",
+                            "Third Party Advisory"
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}
