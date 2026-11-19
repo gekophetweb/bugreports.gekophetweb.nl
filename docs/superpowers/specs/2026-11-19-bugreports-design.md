@@ -131,6 +131,10 @@ users subscribe to the languages they care about and get emailed about new issue
   - **Instant:** after each sync run, each subscriber gets one email listing that run's new matching issues.
   - **Daily:** a digest at 08:00 Europe/Amsterdam covering the last 24 hours.
   - **Weekly:** a digest on Monday at 08:00 Europe/Amsterdam covering the last 7 days.
+  - **Critical alerts:** a new Critical issue is emailed instantly to *every* subscriber of its language, whatever
+    their frequency, as soon as the sync run that added it finishes. Daily and weekly subscribers still see it in
+    their next digest too, marked "already alerted". *(My call: the digest stays a complete overview.)* Instant
+    subscribers get it in their usual per-run email, so nobody gets it twice from one run.
 - **Watching an issue:** a "Watch" toggle on the issue page (signed-in users only) opts in to emails when that
   issue changes. A change counts when the severity, CVSS score, description, references or withdrawn status
   changes; a bare "modified" timestamp does not. Each user gets at most one "watched issues updated" email per

@@ -22,6 +22,7 @@ PostgreSQL 17, Redis 8, Docker Compose, cloudflared.
 - Severity bands exactly: Critical 9.0–10.0, High 7.0–8.9, Medium 4.0–6.9, Low 0.1–3.9, else Unknown.
 - Schedules: OSV every 5 minutes, NVD every 10 minutes, daily digest 08:00 `Europe/Amsterdam`, weekly digest Monday 08:00 `Europe/Amsterdam`. All `withoutOverlapping()->onOneServer()`.
 - Digest shortening: first 20 items full, next 100 one-line, rest "and N more" linking to `/my` with filters. Watched-issue updates first, never shortened.
+- New Critical issues are emailed instantly to every subscriber of the language, whatever their frequency. Instant subscribers never get the same issue twice from one run.
 - "Meaningful change" for watchers = any of `severity`, `cvss_score`, `description`, `references`, `withdrawn_at` changed. `modified_at` alone is not a change.
 - `SYNC_BACKFILL_DAYS=90`, `SYNC_INCLUDE_MALWARE=false`, `NVD_API_KEY=` (optional), announce window 7 days.
 - Email code: 6 digits, 10 min TTL, hashed, max 5 attempts per code, max 5 codes per email per hour.
@@ -324,6 +325,7 @@ The list hides withdrawn issues and shows 25 per page. Badge colours: Critical r
 
 `NotifySubscribers`:
 - **Instant language subscribers** get one `NewIssuesNotification` per user per run (the announceable new issues matching their language and minimum severity, built with `DigestBuilder`).
+- **Critical alerts:** subscribers with frequency `daily` or `weekly` whose language has announceable new **Critical** issues in this run get one `NewIssuesNotification` per user per run, subject `Critical: …`, listing only those Critical issues. Instant subscribers already get them in their normal email, so they get no second one. Digests still list these issues, with an "already alerted" label (`DigestBuilder` items carry `alerted: bool`, true when severity is Critical and the subscription frequency is not instant).
 - **Watchers** of any issue in `changed_issues` get one `WatchedIssuesUpdatedNotification` per user per run, listing each issue and the fields that changed. A user who is both gets two separate emails, because the two have different unsubscribe links.
 
 `digest:send daily|weekly`: for each user with at least one subscription of that frequency, collect the announceable new issues from their subscribed languages (published in the last 24 h or 7 d, at or above each subscription's minimum severity), plus the `issue_changes` on their watched issues in the same window. Skip users with nothing to send.
@@ -331,7 +333,8 @@ The list hides withdrawn issues and shows 25 per page. Badge colours: Critical r
 - [ ] **Step 1: Tests**
   - Instant: 3 new php issues → 1 email containing 3 items; an issue below the minimum severity → no email; a backfilled issue published 30 days ago → no email.
   - Watch: a severity change on a watched issue → 1 `WatchedIssuesUpdatedNotification` naming `severity`; a change on an unwatched issue → none; a modified-only re-import → none.
-  - Daily: the subscriber gets nothing instantly, and `digest:send daily` sends 1 digest covering the last 24 h.
+  - Critical alert: a weekly php subscriber with minimum severity Low gets 1 email straight after a run that adds 1 Critical and 2 High php issues, listing only the Critical one. An instant subscriber in the same run gets exactly 1 email (all 3 issues), not 2. A backfilled Critical published 30 days ago → no alert. The next weekly digest lists the Critical issue marked "already alerted".
+  - Daily: the subscriber gets nothing instantly for non-Critical issues, and `digest:send daily` sends 1 digest covering the last 24 h.
   - Weekly: `digest:send weekly` covers 7 days and includes watched-issue changes.
   - `DigestBuilder` with 150 items → `full` 20, `brief` 100, `overflowCount` 30; ranking puts a Critical from 6 days ago before a High from today; `moreUrl` contains `languages[]=php` and `period=7d`.
   - Watched updates are never shortened (130 watched changes → all 130 in `watched`).
