@@ -22,6 +22,6 @@ class SignInGate
      */
     public static function ssoProviders(): array
     {
-        return class_exists(SsoProviders::class) ? SsoProviders::enabled() : [];
+        return SsoProviders::enabled();
     }
 }
