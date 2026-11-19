@@ -18,6 +18,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->alias(['superadmin' => App\Http\Middleware\EnsureSuperadmin::class]);
+
         // Which proxies are trusted comes from config/trustedproxy.php (cloudflared's subnet).
         $middleware->trustProxies(
             headers: Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_HOST
