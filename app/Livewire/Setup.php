@@ -61,7 +61,7 @@ class Setup extends Component
         Auth::login($user, remember: true);
         session()->regenerate();
 
-        return $this->redirectRoute('admin.mail');
+        return $this->redirectRoute('admin.setup');
     }
 
     private static function tokenIsValid(string $token): bool

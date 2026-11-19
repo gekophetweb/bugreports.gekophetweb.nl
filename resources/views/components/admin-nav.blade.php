@@ -1,5 +1,6 @@
 @php
     $links = [
+        'admin.setup' => 'Setup',
         'admin.mail' => 'Mail',
         'admin.sign-in' => 'Sign-in',
         'admin.users' => 'Users',

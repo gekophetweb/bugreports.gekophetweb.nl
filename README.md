@@ -32,7 +32,9 @@ docker compose logs app | grep -A1 "No superadmin"
 Open the setup link from the log. It works once and creates the superadmin. Until then nobody can sign in.
 The app listens on `127.0.0.1:8000` only.
 
-Then, as superadmin:
+Then, as superadmin, start at **Admin → Setup** (where the setup link takes you). It shows what is still missing
+and has step-by-step guides for creating the Google and GitHub OAuth apps and requesting an NVD API key, with this
+site's exact redirect URLs to copy. The NVD key can be saved and tested right on that page.
 
 1. **Admin → Mail:** choose SMTP, Resend, Mailgun or Postmark, fill in the from address, and use
    **Send test email to me**. Until this is set up, emails (including sign-in codes) only go to the log.
@@ -56,7 +58,7 @@ trusts `cloudflared`'s forwarded headers and nobody else's.
 
 | Setting | Default | What it does |
 |---|---|---|
-| `NVD_API_KEY` | empty | Optional [NVD API key](https://nvd.nist.gov/developers/request-an-api-key): 50 instead of 5 requests per 30 s |
+| `NVD_API_KEY` | empty | Optional [NVD API key](https://nvd.nist.gov/developers/request-an-api-key): 50 instead of 5 requests per 30 s. A key saved in Admin → Setup wins over this one |
 | `SYNC_BACKFILL_DAYS` | 90 | How far back the first import of a feed goes |
 | `SYNC_OSV_BATCH` | 1500 | OSV records per run at most; a big first import catches up over several runs |
 | `SYNC_INCLUDE_MALWARE` | false | Also import OSV `MAL-` (malicious package) reports, of which there are hundreds of thousands |

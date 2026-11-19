@@ -42,7 +42,7 @@ it('creates the first user as superadmin and signs them in', function () {
         ->set('name', 'Jaap')
         ->set('email', 'Admin@Example.test')
         ->call('save')
-        ->assertRedirect(route('admin.mail'));
+        ->assertRedirect(route('admin.setup'));
 
     $user = User::sole();
     expect($user->role)->toBe(Role::Superadmin)
