@@ -68,6 +68,14 @@ class SyncFeed implements ShouldBeUnique, ShouldQueue
         $this->afterRun($run);
     }
 
-    /** Hook for notifications (Task 13). */
-    protected function afterRun(SyncRun $run): void {}
+    /**
+     * Emails about new and changed issues. Also after a failed run: issues it stored before failing
+     * are not "new" on the next run, so they would otherwise never be announced.
+     */
+    protected function afterRun(SyncRun $run): void
+    {
+        if (($run->new_issue_ids ?? []) !== [] || ($run->changed_issues ?? []) !== []) {
+            NotifySubscribers::dispatch($run->id);
+        }
+    }
 }

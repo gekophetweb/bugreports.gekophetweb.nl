@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\SsoController;
+use App\Http\Controllers\UnsubscribeController;
 use App\Livewire\Admin;
 use App\Livewire\Auth\Login;
 use App\Livewire\Issues;
@@ -12,6 +13,19 @@ Route::get('/', Issues\Index::class)->name('home');
 Route::get('/issues/{issue}', Issues\Show::class)->name('issues.show');
 
 Route::get('/setup/{token}', Setup::class)->name('setup');
+
+Route::middleware('signed')->group(function () {
+    Route::match(['get', 'post'], '/unsubscribe/s/{subscription}', [UnsubscribeController::class, 'subscription'])
+        ->whereNumber('subscription')->name('unsubscribe.subscription');
+    Route::match(['get', 'post'], '/unsubscribe/w/{watch}', [UnsubscribeController::class, 'watch'])
+        ->whereNumber('watch')->name('unsubscribe.watch');
+});
+
+Route::middleware('auth')->group(function () {
+    // Replaced by the My account pages in Task 14.
+    Route::get('/my', Issues\Index::class)->name('my.issues');
+    Route::get('/my/settings', fn () => redirect()->route('my.issues'))->name('my.settings');
+});
 
 Route::get('/login', Login::class)->middleware('guest')->name('login');
 Route::middleware('guest')->group(function () {

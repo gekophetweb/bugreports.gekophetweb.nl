@@ -19,4 +19,9 @@ class IssueWatch extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function unwatchUrl(): string
+    {
+        return \Illuminate\Support\Facades\URL::signedRoute('unsubscribe.watch', ['watch' => $this->id]);
+    }
 }

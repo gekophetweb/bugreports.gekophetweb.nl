@@ -20,6 +20,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias(['superadmin' => App\Http\Middleware\EnsureSuperadmin::class]);
 
+        // Mail clients' one-click unsubscribe POSTs without a CSRF token; the URL is signed instead.
+        $middleware->validateCsrfTokens(except: ['unsubscribe/*']);
+
         // Which proxies are trusted comes from config/trustedproxy.php (cloudflared's subnet).
         $middleware->trustProxies(
             headers: Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_HOST

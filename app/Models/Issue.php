@@ -70,6 +70,22 @@ class Issue extends Model
         return $query->whereJsonContains('aliases', $alias);
     }
 
+    /** New enough to announce: first seen by us, published in the last few days, not withdrawn. */
+    public function scopeAnnounceable(Builder $query): Builder
+    {
+        return $query->whereNotNull('first_seen_at')
+            ->where('published_at', '>=', now()->subDays(config('issues.announce_days')))
+            ->whereNull('withdrawn_at');
+    }
+
+    /** Recent enough that a change to it, while Critical, is emailed to every subscriber of its languages. */
+    public function isCriticalUpdateRelevant(Severity $previous): bool
+    {
+        return ($this->severity === Severity::Critical || $previous === Severity::Critical)
+            && $this->published_at !== null
+            && $this->published_at->greaterThanOrEqualTo(now()->subDays(config('issues.critical_update_window_days')));
+    }
+
     public function scopeNotWithdrawn(Builder $query): Builder
     {
         return $query->whereNull('withdrawn_at');
