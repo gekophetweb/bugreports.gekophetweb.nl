@@ -1,0 +1,23 @@
+# Test runner: PHP 8.5 with pdo_pgsql against a throwaway Postgres. Use ./docker/test.sh [pest args].
+name: bugreports-test
+
+services:
+  testdb:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: bugreports_test
+      POSTGRES_USER: bugreports
+      POSTGRES_PASSWORD: secret
+    tmpfs: [/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bugreports -d bugreports_test"]
+      interval: 2s
+      retries: 30
+
+  tests:
+    build: { context: ., target: dev }
+    working_dir: /work
+    volumes:
+      - .:/work
+    depends_on:
+      testdb: { condition: service_healthy }
