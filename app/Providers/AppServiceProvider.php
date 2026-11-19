@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Support\Mail\MailConfigurator;
+use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
@@ -18,6 +20,11 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Stored times are UTC; ->inDisplayTz() converts for display (Europe/Amsterdam by default).
+        foreach ([Carbon::class, CarbonImmutable::class] as $class) {
+            $class::macro('inDisplayTz', fn () => $this->copy()->setTimezone(config('app.display_timezone')));
+        }
+
         $this->applyRuntimeSettings();
 
         // Queue workers boot once; pick up settings changed in the website before each job.

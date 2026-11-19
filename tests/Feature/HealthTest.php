@@ -21,6 +21,8 @@ it('ignores forwarded headers from untrusted addresses', function () {
         ->assertDontSee('evil.example');
 });
 
-it('uses the Amsterdam timezone', function () {
-    expect(config('app.timezone'))->toBe('Europe/Amsterdam');
+it('stores in UTC and shows Amsterdam time', function () {
+    expect(config('app.timezone'))->toBe('UTC')
+        ->and(config('app.display_timezone'))->toBe('Europe/Amsterdam')
+        ->and(now()->parse('2026-07-01 10:00:00', 'UTC')->inDisplayTz()->format('H:i'))->toBe('12:00');
 });

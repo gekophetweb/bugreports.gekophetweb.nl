@@ -65,7 +65,10 @@ return [
     |
     */
 
-    'timezone' => env('APP_TIMEZONE', 'Europe/Amsterdam'),
+    'timezone' => 'UTC',
+
+    // Times are stored in UTC; this is the timezone they are shown in, and the one schedules and date filters use.
+    'display_timezone' => env('DISPLAY_TIMEZONE', 'Europe/Amsterdam'),
 
     /*
     |--------------------------------------------------------------------------
