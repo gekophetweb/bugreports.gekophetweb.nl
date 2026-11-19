@@ -135,6 +135,13 @@ users subscribe to the languages they care about and get emailed about new issue
     their frequency, as soon as the sync run that added it finishes. Daily and weekly subscribers still see it in
     their next digest too, marked "already alerted". *(My call: the digest stays a complete overview.)* Instant
     subscribers get it in their usual per-run email, so nobody gets it twice from one run.
+  - **Critical updates:** when a Critical issue changes (by the same rule as watched issues), every subscriber of
+    its language is emailed straight after the sync run, as if they were watching it. This also covers an issue
+    that *becomes* Critical through an update, which counts as a critical alert, and one that is downgraded from
+    Critical, so subscribers learn it is less urgent. *(My call.)* Only issues published in the last 90 days count
+    (`CRITICAL_UPDATE_WINDOW_DAYS`), because NVD keeps re-touching old CVEs and that would flood inboxes.
+    *(My call.)* A user gets one "issues updated" email per run, covering both their watched issues and the
+    critical updates.
 - **Watching an issue:** a "Watch" toggle on the issue page (signed-in users only) opts in to emails when that
   issue changes. A change counts when the severity, CVSS score, description, references or withdrawn status
   changes; a bare "modified" timestamp does not. Each user gets at most one "watched issues updated" email per
