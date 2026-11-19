@@ -7,6 +7,7 @@ use App\Models\SyncCursor;
 use App\Models\SyncRun;
 use App\Sources\Contracts\IssueSource;
 use App\Sources\IssueUpserter;
+use App\Support\Nvd\NvdApiKey;
 use App\Support\Sleeper;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
@@ -68,7 +69,7 @@ class NvdSource implements IssueSource
      */
     private function waitForTurn(): void
     {
-        $interval = filled(config('issues.nvd_api_key')) ? 0.6 : 6.0;
+        $interval = NvdApiKey::get() !== null ? 0.6 : 6.0;
 
         Cache::lock('nvd:throttle', 30)->block(30, function () use ($interval) {
             $now = microtime(true);
@@ -83,7 +84,7 @@ class NvdSource implements IssueSource
     private function fetch(string $cpe, CarbonImmutable $from, CarbonImmutable $to, int $startIndex): array
     {
         $request = Http::timeout(60)->acceptJson();
-        if (filled($key = config('issues.nvd_api_key'))) {
+        if ($key = NvdApiKey::get()) {
             $request = $request->withHeaders(['apiKey' => $key]);
         }
 

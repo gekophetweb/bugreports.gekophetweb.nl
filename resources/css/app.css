@@ -192,6 +192,11 @@ summary:focus-visible {
     .facts dd { @apply mt-0.5; color: var(--muted); }
     .refs { @apply mt-3 space-y-2 text-sm; }
     .refs a { color: var(--signal); }
+    /* Numbered steps: these really are a sequence. */
+    .guide { @apply mt-3 list-decimal space-y-3 pl-6 leading-relaxed; max-width: 72ch; }
+    .guide a { color: var(--signal); text-decoration: underline; text-underline-offset: 2px; }
+    .guide li::marker { font-family: var(--font-narrow); font-weight: 700; color: var(--muted); }
+
     .status-pill { @apply rounded px-2 py-0.5 text-xs font-semibold; background: color-mix(in srgb, var(--muted) 18%, transparent); }
     .status-pill--in_progress, .status-pill--planned { background: color-mix(in srgb, var(--signal) 18%, transparent); color: var(--signal); }
     .status-pill--done { background: color-mix(in srgb, #15803d 18%, transparent); color: #15803d; }

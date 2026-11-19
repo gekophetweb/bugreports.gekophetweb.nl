@@ -45,6 +45,7 @@ Route::post('/logout', function () {
 })->middleware('auth')->name('logout');
 
 Route::middleware(['auth', 'superadmin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/', Admin\SetupGuide::class)->name('setup');
     Route::get('/mail', Admin\Mail::class)->name('mail');
     Route::get('/sign-in', Admin\SignIn::class)->name('sign-in');
     Route::get('/users', Admin\Users::class)->name('users');

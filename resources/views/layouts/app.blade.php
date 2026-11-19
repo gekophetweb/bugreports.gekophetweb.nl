@@ -29,7 +29,7 @@
                         <a href="{{ route('my.settings') }}" wire:navigate>Settings</a>
                     @endif
                     @if (auth()->user()->isSuperadmin())
-                        <a href="{{ route('admin.mail') }}" wire:navigate>Admin</a>
+                        <a href="{{ route('admin.setup') }}" wire:navigate>Admin</a>
                     @endif
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
