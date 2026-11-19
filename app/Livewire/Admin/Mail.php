@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Livewire\Concerns\RequiresSuperadmin;
 use App\Mail\TestMail;
 use App\Support\Mail\MailConfigurator;
 use App\Support\Settings;
@@ -20,6 +21,8 @@ use Throwable;
 #[Title('Mail settings')]
 class Mail extends Component
 {
+    use RequiresSuperadmin;
+
     /** Setting key => [property, secret]. */
     private const FIELDS = [
         'mail.mailer' => ['mailer', false],
@@ -126,6 +129,8 @@ class Mail extends Component
 
     public function sendTest(): void
     {
+        app(MailConfigurator::class)->apply(); // the saved settings, not those of when the worker started
+
         try {
             MailFacade::to(auth()->user()->email)->send(new TestMail);
             session()->flash('status', 'Test email sent to '.auth()->user()->email.'.');

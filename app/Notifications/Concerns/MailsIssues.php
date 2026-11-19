@@ -7,6 +7,8 @@ use Symfony\Component\Mime\Email;
 
 trait MailsIssues
 {
+    use QueuesOnMail;
+
     public function via(object $notifiable): array
     {
         return ['mail'];

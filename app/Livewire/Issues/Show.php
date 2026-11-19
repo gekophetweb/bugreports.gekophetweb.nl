@@ -11,8 +11,20 @@ class Show extends Component
 {
     public Issue $issue;
 
-    public function mount(Issue $issue): void
+    /**
+     * Looked up by its id, or by an older id it now lists as an alias (a CVE first imported from NVD and
+     * later taken over by its advisory), which redirects so links in sent emails keep working.
+     */
+    public function mount(string $id)
     {
+        $issue = Issue::query()->where('external_id', $id)->first();
+        if (! $issue) {
+            $current = Issue::query()->withAlias($id)->orderBy('id')->first();
+            abort_unless($current, 404);
+
+            return $this->redirectRoute('issues.show', $current);
+        }
+
         $this->issue = $issue->load('languages:id,slug,name');
     }
 

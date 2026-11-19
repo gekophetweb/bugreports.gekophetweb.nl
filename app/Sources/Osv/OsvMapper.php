@@ -6,6 +6,7 @@ use App\Enums\Severity;
 use App\Models\Issue;
 use App\Sources\IssueData;
 use App\Support\Cvss\Cvss31;
+use App\Support\SafeUrls;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 
@@ -29,7 +30,7 @@ class OsvMapper
             packages: array_values(array_unique(array_filter(array_map(
                 fn ($a) => $a['package']['name'] ?? null, $v['affected'] ?? []
             )))),
-            references: array_values(array_unique(array_filter(array_map(fn ($r) => $r['url'] ?? null, $v['references'] ?? [])))),
+            references: SafeUrls::filter(array_map(fn ($r) => $r['url'] ?? null, $v['references'] ?? [])),
             sourceUrl: Issue::sourceUrlFor('osv', $id),
             publishedAt: self::date($v['published'] ?? null) ?? self::date($v['modified'] ?? null),
             modifiedAt: self::date($v['modified'] ?? null),

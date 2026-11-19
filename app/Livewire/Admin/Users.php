@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin;
 
 use App\Enums\Role;
+use App\Livewire\Concerns\RequiresSuperadmin;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
@@ -15,7 +16,7 @@ use Livewire\WithPagination;
 #[Title('Users')]
 class Users extends Component
 {
-    use WithPagination;
+    use RequiresSuperadmin, WithPagination;
 
     public string $search = '';
 

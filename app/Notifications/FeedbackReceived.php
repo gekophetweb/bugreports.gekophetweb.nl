@@ -11,7 +11,7 @@ use Illuminate\Notifications\Notification;
 /** To the submitter (with their status link), or to a superadmin (with the admin link). */
 class FeedbackReceived extends Notification implements ShouldQueue
 {
-    use Queueable;
+    use Concerns\QueuesOnMail, Queueable;
 
     public function __construct(public Feedback $feedback, public bool $forAdmin = false) {}
 

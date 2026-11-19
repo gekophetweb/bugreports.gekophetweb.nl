@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Livewire\Concerns\RequiresSuperadmin;
 use App\Models\SyncCursor;
 use App\Models\SyncRun;
 use App\Sources\SyncDispatcher;
@@ -15,7 +16,7 @@ use Livewire\WithPagination;
 #[Title('Sync')]
 class Sync extends Component
 {
-    use WithPagination;
+    use RequiresSuperadmin, WithPagination;
 
     public string $status = '';
 

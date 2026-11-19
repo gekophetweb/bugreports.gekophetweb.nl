@@ -25,13 +25,23 @@ services:
     ports:
       - "127.0.0.1:8000:8000"   # localhost only; the Cloudflare tunnel reaches app:8000 directly
 
+  # Syncs and notification fan-out (long jobs, up to 15 minutes).
   queue:
     <<: *app
-    command: php artisan queue:work --tries=3 --timeout=900 --max-time=3600
+    command: php artisan queue:work --queue=default --tries=3 --timeout=900 --max-time=3600
     healthcheck: { disable: true }
     depends_on:
       app: { condition: service_healthy }
-    # frontend for internet access: sending mail and fetching from OSV/NVD.
+    # frontend for internet access: fetching from OSV/NVD.
+    networks: [frontend, backend]
+
+  # Emails only (sign-in codes, alerts, digests), so they never wait behind a sync.
+  mail-queue:
+    <<: *app
+    command: php artisan queue:work --queue=mail --tries=3 --timeout=120 --max-time=3600
+    healthcheck: { disable: true }
+    depends_on:
+      app: { condition: service_healthy }
     networks: [frontend, backend]
 
   scheduler:

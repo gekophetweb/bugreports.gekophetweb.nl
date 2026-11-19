@@ -51,7 +51,7 @@
         <section class="mt-10">
             <h2 class="text-lg font-semibold">References</h2>
             <ul class="refs">
-                @foreach ($issue->references as $url)
+                @foreach (\App\Support\SafeUrls::filter($issue->references) as $url)
                     <li><a href="{{ $url }}" target="_blank" rel="noopener noreferrer nofollow" class="break-all">{{ $url }}</a></li>
                 @endforeach
             </ul>

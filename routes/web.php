@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', Issues\Index::class)->name('home');
-Route::get('/issues/{issue}', Issues\Show::class)->name('issues.show');
+Route::get('/issues/{id}', Issues\Show::class)->name('issues.show');
 Route::get('/feedback', Feedback\Create::class)->name('feedback.create');
 Route::get('/feedback/{feedback}', Feedback\Status::class)->where('feedback', '[A-Za-z0-9]{40}')->name('feedback.status');
 

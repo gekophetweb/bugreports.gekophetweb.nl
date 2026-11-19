@@ -5,6 +5,7 @@ namespace App\Sources\Nvd;
 use App\Enums\Severity;
 use App\Models\Issue;
 use App\Sources\IssueData;
+use App\Support\SafeUrls;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 
@@ -28,7 +29,7 @@ class NvdMapper
             cvssScore: $score,
             cvssVector: $vector,
             packages: array_values(array_filter([self::product($cpe)])),
-            references: array_values(array_unique(array_filter(array_map(fn ($r) => $r['url'] ?? null, $cve['references'] ?? [])))),
+            references: SafeUrls::filter(array_map(fn ($r) => $r['url'] ?? null, $cve['references'] ?? [])),
             sourceUrl: Issue::sourceUrlFor('nvd', $id),
             publishedAt: self::date($cve['published'] ?? null),
             modifiedAt: $modified,

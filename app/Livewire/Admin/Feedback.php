@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin;
 
 use App\Enums\FeedbackStatus;
+use App\Livewire\Concerns\RequiresSuperadmin;
 use App\Models\Feedback as FeedbackModel;
 use App\Notifications\FeedbackStatusChanged;
 use Illuminate\Support\Facades\Notification;
@@ -18,7 +19,7 @@ use Livewire\WithPagination;
 #[Title('Feedback')]
 class Feedback extends Component
 {
-    use WithPagination;
+    use RequiresSuperadmin, WithPagination;
 
     #[Url(except: 'open')]
     public string $show = 'open';

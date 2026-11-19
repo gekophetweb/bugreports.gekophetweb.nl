@@ -10,7 +10,7 @@ use Illuminate\Notifications\Notification;
 
 class FeedbackStatusChanged extends Notification implements ShouldQueue
 {
-    use Queueable;
+    use Concerns\QueuesOnMail, Queueable;
 
     public function __construct(public Feedback $feedback) {}
 

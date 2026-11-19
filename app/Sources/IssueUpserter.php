@@ -23,15 +23,14 @@ class IssueUpserter
             $issue = Issue::query()->where('external_id', $data->externalId)->lockForUpdate()->first();
             $mode = 'same';
 
-            if (! $issue && $data->source === 'nvd') {
-                // An OSV advisory already lists this CVE as an alias: enrich that issue instead.
-                $issue = Issue::query()->withAlias($data->externalId)->lockForUpdate()->first();
-                $mode = 'nvd-into-osv';
-            }
-            if (! $issue && $data->source === 'osv' && $data->aliases !== []) {
-                // The CVE came in from NVD first: the advisory takes over that row.
-                $issue = Issue::query()->where('source', 'nvd')->whereIn('external_id', $data->aliases)->lockForUpdate()->first();
-                $mode = 'osv-takes-over-nvd';
+            if (! $issue) {
+                // Another record for the same vulnerability is already stored (PYSEC + GHSA, GO + GHSA, the
+                // CVE from NVD): its id is one of our aliases, or it lists our id or one of our aliases.
+                $issue = $this->sameVulnerability($data);
+                if ($issue) {
+                    // An advisory takes over a row that only came from NVD; otherwise merge into the stored row.
+                    $mode = $data->source === 'osv' && $issue->source === 'nvd' ? 'osv-takes-over-nvd' : 'merge';
+                }
             }
 
             if (! $issue) {
@@ -43,14 +42,14 @@ class IssueUpserter
 
             $previousSeverity = $issue->severity;
             $issue->fill(match ($mode) {
-                'same' => $this->attributes($data),
-                'nvd-into-osv' => $this->scoreIfMissing($issue, $data),
+                // Our own record: take everything, but a record without any severity keeps the stored one
+                // (an NVD score merged in earlier), and ids merged in earlier stay aliases.
+                'same' => [...$this->attributes($data), ...$this->keepScore($issue, $data), 'aliases' => $this->aliases($issue, $data)],
+                'merge' => [...$this->scoreIfMissing($issue, $data), 'aliases' => $this->aliases($issue, $data)],
                 'osv-takes-over-nvd' => [
                     ...$this->attributes($data),
-                    ...($data->cvssScore === null && $data->severity === Severity::Unknown ? [
-                        'severity' => $issue->severity, 'cvss_score' => $issue->cvss_score, 'cvss_vector' => $issue->cvss_vector,
-                    ] : []),
-                    'aliases' => array_values(array_unique([...$data->aliases, $issue->external_id])),
+                    ...$this->keepScore($issue, $data),
+                    'aliases' => $this->aliases($issue, $data, previousId: $issue->external_id),
                 ],
             });
             $changes = $this->meaningfulChanges($issue);
@@ -70,7 +69,37 @@ class IssueUpserter
         });
     }
 
-    /** An NVD CVE only fills in the score of the OSV issue that aliases it when that has none. */
+    private function sameVulnerability(IssueData $data): ?Issue
+    {
+        $ids = array_values(array_unique([$data->externalId, ...$data->aliases]));
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+
+        return Issue::query()
+            ->where(fn ($q) => $q->whereIn('external_id', $data->aliases)
+                ->orWhereRaw("jsonb_exists_any(aliases, ARRAY[$placeholders]::text[])", $ids))
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->first();
+    }
+
+    /** A record without any severity does not wipe the one already stored. */
+    private function keepScore(Issue $issue, IssueData $d): array
+    {
+        return $d->cvssScore === null && $d->severity === Severity::Unknown
+            ? ['severity' => $issue->severity, 'cvss_score' => $issue->cvss_score, 'cvss_vector' => $issue->cvss_vector]
+            : [];
+    }
+
+    /** @return list<string> stored aliases plus the record's id and aliases, without the row's own id */
+    private function aliases(Issue $issue, IssueData $d, ?string $previousId = null): array
+    {
+        $own = $previousId !== null ? $d->externalId : $issue->external_id;
+        $all = [...($issue->aliases ?? []), ...$d->aliases, $d->externalId, ...($previousId ? [$previousId] : [])];
+
+        return array_values(array_unique(array_filter($all, fn ($id) => $id !== $own)));
+    }
+
+    /** A merged record only fills in the score of the stored issue when that has none. */
     private function scoreIfMissing(Issue $issue, IssueData $d): array
     {
         if ($issue->cvss_score !== null || $d->cvssScore === null && $d->severity === Severity::Unknown) {

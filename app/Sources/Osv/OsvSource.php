@@ -11,6 +11,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\Pool;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Psr\Http\Message\StreamInterface;
 use RuntimeException;
 
@@ -51,6 +52,12 @@ class OsvSource implements IssueSource
 
             foreach ($chunk as $id) {
                 $response = $responses[$id];
+                if ($response instanceof Response && in_array($response->status(), [404, 410], true)) {
+                    // Deleted or merged upstream: skip it, or it would stall this ecosystem for good.
+                    Log::info("OSV record $id is gone (HTTP {$response->status()}); skipped.");
+
+                    continue;
+                }
                 if (! $response instanceof Response || ! $response->successful()) {
                     $status = $response instanceof Response ? 'HTTP '.$response->status() : $response::class;
                     throw new RuntimeException("OSV record $id could not be fetched ($status).");

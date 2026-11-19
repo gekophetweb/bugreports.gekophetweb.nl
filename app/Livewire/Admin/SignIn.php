@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Livewire\Concerns\RequiresSuperadmin;
 use App\Support\Auth\SsoProviders;
 use App\Support\Settings;
 use Livewire\Attributes\Layout;
@@ -13,6 +14,8 @@ use Livewire\Component;
 #[Title('Sign-in settings')]
 class SignIn extends Component
 {
+    use RequiresSuperadmin;
+
     /** @var array<string, array{enabled: bool, client_id: string, client_secret: string, has_secret: bool}> */
     public array $providers = [];
 

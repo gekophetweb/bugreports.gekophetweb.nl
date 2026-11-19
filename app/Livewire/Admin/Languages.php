@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin;
 
 use App\Enums\LanguageKind;
+use App\Livewire\Concerns\RequiresSuperadmin;
 use App\Models\Language;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
@@ -14,6 +15,8 @@ use Livewire\Component;
 #[Title('Languages')]
 class Languages extends Component
 {
+    use RequiresSuperadmin;
+
     public ?int $editingId = null;
 
     public bool $editing = false;

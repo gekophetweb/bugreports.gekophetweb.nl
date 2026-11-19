@@ -21,8 +21,6 @@ class MailConfigurator
         'log' => 'Only write emails to the log',
     ];
 
-    public function __construct(private MailManager $manager) {}
-
     public function apply(): void
     {
         $s = Settings::many([
@@ -52,6 +50,10 @@ class MailConfigurator
             'services.postmark.token' => $s['mail.postmark_token'],
         ], fn ($v) => $v !== null && $v !== ''));
 
-        $this->manager->forgetMailers();
+        // Resolved here, not injected: in tests Mail::fake() swaps the manager for a fake.
+        $manager = app('mail.manager');
+        if ($manager instanceof MailManager) {
+            $manager->forgetMailers();
+        }
     }
 }

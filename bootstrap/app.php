@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\ApplyRuntimeSettings;
 use App\Http\Middleware\EnsureSuperadmin;
 use App\Support\LocalEnvironment;
 use Illuminate\Foundation\Application;
@@ -20,6 +21,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias(['superadmin' => EnsureSuperadmin::class]);
+
+        $middleware->web(append: [ApplyRuntimeSettings::class]);
 
         // Mail clients' one-click unsubscribe POSTs without a CSRF token; the URL is signed instead.
         $middleware->validateCsrfTokens(except: ['unsubscribe/*']);
