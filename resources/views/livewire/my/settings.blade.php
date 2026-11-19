@@ -94,6 +94,6 @@
             </x-field>
             <button type="submit" class="btn-secondary">Save name</button>
         </form>
-        <p class="mt-2 text-sm text-[--muted]">Signed in as {{ auth()->user()->email }}.</p>
+        <p class="mt-2 text-sm text-[--muted]">Signed in as {{ auth()->user()->email }}. <a href="{{ route('feedback.mine') }}" wire:navigate class="underline">See your feedback</a>.</p>
     </section>
 </div>

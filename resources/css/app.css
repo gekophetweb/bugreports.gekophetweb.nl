@@ -192,6 +192,10 @@ summary:focus-visible {
     .facts dd { @apply mt-0.5; color: var(--muted); }
     .refs { @apply mt-3 space-y-2 text-sm; }
     .refs a { color: var(--signal); }
+    .status-pill { @apply rounded px-2 py-0.5 text-xs font-semibold; background: color-mix(in srgb, var(--muted) 18%, transparent); }
+    .status-pill--in_progress, .status-pill--planned { background: color-mix(in srgb, var(--signal) 18%, transparent); color: var(--signal); }
+    .status-pill--done { background: color-mix(in srgb, #15803d 18%, transparent); color: #15803d; }
+    .status-pill--declined { background: var(--ink); color: var(--paper); }
     .withdrawn { @apply rounded px-2 py-0.5 text-xs font-semibold; background: var(--ink); color: var(--paper); }
 }
 
