@@ -19,7 +19,8 @@
 
     <div class="detail__actions">
         <a href="{{ $issue->source_url }}" target="_blank" rel="noopener noreferrer" class="btn-primary">Read the full report at the source</a>
-        {{ $actions ?? '' }}
+        <livewire:issues.star-toggle :issue="$issue" />
+        <livewire:issues.watch-toggle :issue="$issue" />
     </div>
 
     <div class="detail__grid">

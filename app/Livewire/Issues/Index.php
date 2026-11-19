@@ -3,7 +3,9 @@
 namespace App\Livewire\Issues;
 
 use App\Enums\Severity;
+use App\Livewire\Concerns\TogglesIssueFlags;
 use App\Models\Issue;
+use App\Models\IssueStar;
 use App\Models\Language;
 use App\Support\Issues\IssueQuery;
 use Livewire\Attributes\Layout;
@@ -17,7 +19,7 @@ use Livewire\WithPagination;
 #[Title('Security issues')]
 class Index extends Component
 {
-    use WithPagination;
+    use TogglesIssueFlags, WithPagination;
 
     /** @var list<string> */
     #[Url(except: [])]
@@ -50,6 +52,13 @@ class Index extends Component
     {
         $this->reset('languages', 'severity', 'period', 'from', 'to', 'date_field', 'q');
         $this->resetPage();
+    }
+
+    /** Star from the list. Guests are sent to sign in and come back to this filtered view. */
+    public function toggleStar(int $issueId): void
+    {
+        $issue = Issue::query()->findOrFail($issueId);
+        $this->flip(IssueStar::class, $issue, url()->previous() ?: route('home'));
     }
 
     /** @return array<string, mixed> */

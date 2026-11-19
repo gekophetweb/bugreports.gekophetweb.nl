@@ -69,6 +69,13 @@ class IssueQuery
                 ->orWhereRaw('packages::text ilike ?', [$like]));
         }
 
+        if ($user) {
+            // Starred issues first. Stars change the order only: filters still apply to them.
+            $query->select('issues.*')->selectRaw(
+                'exists(select 1 from issue_stars s where s.issue_id = issues.id and s.user_id = ?) as is_starred', [$user->id]
+            )->orderByDesc('is_starred');
+        }
+
         return $query->orderByDesc($column)->orderByDesc('issues.id');
     }
 

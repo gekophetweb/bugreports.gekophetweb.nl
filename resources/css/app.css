@@ -173,6 +173,9 @@ summary:focus-visible {
     .row__side { @apply col-start-2 flex items-center gap-4 text-sm sm:col-start-3 sm:flex-col sm:items-end sm:gap-1; color: var(--muted); }
     .row__date { @apply tabular-nums whitespace-nowrap; }
     .row__source { @apply underline underline-offset-2; }
+    .star { @apply rounded p-1; color: var(--muted); }
+    .star[aria-pressed='true'] { color: var(--sev-medium); }
+    .star:hover { color: var(--ink); }
 
     .empty { @apply mt-6 rounded-lg border border-dashed p-8 text-center; border-color: var(--line); }
 

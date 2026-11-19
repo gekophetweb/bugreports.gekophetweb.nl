@@ -26,11 +26,7 @@
         @else
             <ol class="feed" wire:loading.class="opacity-60">
                 @foreach ($issues as $issue)
-                    <x-issue-row :issue="$issue" :date-field="$filters['date_field']">
-                        @isset($rowActions)
-                            <x-slot:actions>{{ $rowActions($issue) }}</x-slot:actions>
-                        @endisset
-                    </x-issue-row>
+                    <x-issue-row :issue="$issue" :date-field="$filters['date_field']" />
                 @endforeach
             </ol>
             <div class="mt-6">{{ $issues->links() }}</div>

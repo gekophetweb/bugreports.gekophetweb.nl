@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -35,6 +36,26 @@ class User extends Authenticatable
     public function isSuperadmin(): bool
     {
         return $this->role === Role::Superadmin;
+    }
+
+    public function starredIssues(): BelongsToMany
+    {
+        return $this->belongsToMany(Issue::class, 'issue_stars')->withTimestamps();
+    }
+
+    public function watchedIssues(): BelongsToMany
+    {
+        return $this->belongsToMany(Issue::class, 'issue_watches')->withTimestamps();
+    }
+
+    public function hasStarred(Issue $issue): bool
+    {
+        return IssueStar::query()->where(['user_id' => $this->id, 'issue_id' => $issue->id])->exists();
+    }
+
+    public function isWatching(Issue $issue): bool
+    {
+        return IssueWatch::query()->where(['user_id' => $this->id, 'issue_id' => $issue->id])->exists();
     }
 
     public static function superadminExists(): bool

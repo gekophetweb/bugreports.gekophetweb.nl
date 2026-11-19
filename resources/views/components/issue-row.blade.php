@@ -18,7 +18,12 @@
         </p>
     </div>
     <div class="row__side">
-        {{ $actions ?? '' }}
+        @php $starred = (bool) ($issue->is_starred ?? false); @endphp
+        <button type="button" wire:click="toggleStar({{ $issue->id }})" class="star" aria-pressed="{{ $starred ? 'true' : 'false' }}"
+                aria-label="{{ $starred ? 'Unstar' : 'Star' }} {{ $issue->external_id }}" title="Starred issues are shown first">
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="{{ $starred ? 'currentColor' : 'none' }}"
+                 stroke="currentColor" stroke-width="2"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9z"/></svg>
+        </button>
         @if ($date)
             <time datetime="{{ $date->toIso8601String() }}" class="row__date" title="{{ $date->inDisplayTz()->format('j M Y H:i') }}">
                 {{ $date->inDisplayTz()->isToday() ? $date->inDisplayTz()->format('H:i') : $date->inDisplayTz()->format('j M Y') }}
