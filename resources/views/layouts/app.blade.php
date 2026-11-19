@@ -15,6 +15,12 @@
                     @if (auth()->user()->isSuperadmin())
                         <a href="{{ route('admin.mail') }}">Admin</a>
                     @endif
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit">Sign out</button>
+                    </form>
+                @else
+                    <a href="{{ route('login') }}">Sign in</a>
                 @endauth
             </div>
         </nav>

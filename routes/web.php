@@ -1,11 +1,22 @@
 <?php
 
+use App\Livewire\Auth\Login;
 use App\Livewire\Setup;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => view('welcome'))->name('home');
 
 Route::get('/setup/{token}', Setup::class)->name('setup');
+
+Route::get('/login', Login::class)->middleware('guest')->name('login');
+Route::post('/logout', function () {
+    Auth::logout();
+    session()->invalidate();
+    session()->regenerateToken();
+
+    return redirect()->route('home');
+})->middleware('auth')->name('logout');
 
 Route::middleware(['auth', 'superadmin'])->prefix('admin')->name('admin.')->group(function () {
     // Replaced by the Livewire admin pages in Task 6.
