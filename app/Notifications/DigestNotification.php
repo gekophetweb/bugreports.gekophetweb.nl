@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Models\Subscription;
 use App\Notifications\Concerns\MailsIssues;
 use App\Support\Digest\Digest;
 use Illuminate\Bus\Queueable;
@@ -14,7 +15,7 @@ class DigestNotification extends Notification implements ShouldQueue
 {
     use MailsIssues, Queueable;
 
-    /** @param  list<\App\Models\Subscription>  $subscriptions */
+    /** @param  list<Subscription>  $subscriptions */
     public function __construct(public Digest $digest, public string $period, public array $subscriptions) {}
 
     public function toMail(object $notifiable): MailMessage

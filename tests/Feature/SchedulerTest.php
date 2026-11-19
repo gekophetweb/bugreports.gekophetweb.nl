@@ -5,10 +5,11 @@ use App\Models\Language;
 use App\Models\SyncRun;
 use App\Sources\Nvd\NvdSource;
 use App\Sources\Osv\OsvSource;
+use Illuminate\Console\Scheduling\Event;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Queue;
 
-function scheduled(string $command): ?Illuminate\Console\Scheduling\Event
+function scheduled(string $command): ?Event
 {
     return collect(app(Schedule::class)->events())->first(fn ($e) => str_contains($e->command ?? '', $command));
 }

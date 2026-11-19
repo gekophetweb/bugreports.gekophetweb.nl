@@ -2,6 +2,8 @@
 
 namespace App\Notifications;
 
+use App\Enums\Severity;
+use App\Models\Issue;
 use App\Notifications\Concerns\MailsIssues;
 use App\Support\Digest\DigestBuilder;
 use Illuminate\Bus\Queueable;
@@ -14,7 +16,7 @@ class WatchedIssuesUpdatedNotification extends Notification implements ShouldQue
 {
     use MailsIssues, Queueable;
 
-    /** @param  list<array{issue: \App\Models\Issue, fields: list<string>, previous: \App\Enums\Severity, tag: string, unsubscribeUrl: string}>  $items */
+    /** @param  list<array{issue: Issue, fields: list<string>, previous: Severity, tag: string, unsubscribeUrl: string}>  $items */
     public function __construct(public array $items) {}
 
     public function toMail(object $notifiable): MailMessage

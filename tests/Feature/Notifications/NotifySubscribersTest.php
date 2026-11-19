@@ -3,6 +3,7 @@
 use App\Enums\Severity;
 use App\Enums\SubscriptionFrequency;
 use App\Jobs\NotifySubscribers;
+use App\Jobs\SyncFeed;
 use App\Models\Issue;
 use App\Models\IssueChange;
 use App\Models\IssueWatch;
@@ -12,7 +13,9 @@ use App\Models\SyncRun;
 use App\Models\User;
 use App\Notifications\NewIssuesNotification;
 use App\Notifications\WatchedIssuesUpdatedNotification;
+use App\Sources\Osv\OsvSource;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Queue;
 
 beforeEach(function () {
     Notification::fake();
@@ -210,11 +213,11 @@ it('sends a watcher who also subscribes exactly one update email', function () {
 });
 
 it('is queued after a sync run with new or changed issues, even a failed one', function () {
-    Illuminate\Support\Facades\Queue::fake([NotifySubscribers::class]);
+    Queue::fake([NotifySubscribers::class]);
     $run = runWith([newIssue($this->php, Severity::High)->id]);
     $run->update(['status' => 'failed']);
 
-    (new class(App\Sources\Osv\OsvSource::class, $this->php->id, 'Packagist') extends App\Jobs\SyncFeed
+    (new class(OsvSource::class, $this->php->id, 'Packagist') extends SyncFeed
     {
         public function fire(SyncRun $run): void
         {
@@ -222,5 +225,5 @@ it('is queued after a sync run with new or changed issues, even a failed one', f
         }
     })->fire($run);
 
-    Illuminate\Support\Facades\Queue::assertPushed(NotifySubscribers::class, fn ($j) => $j->runId === $run->id);
+    Queue::assertPushed(NotifySubscribers::class, fn ($j) => $j->runId === $run->id);
 });

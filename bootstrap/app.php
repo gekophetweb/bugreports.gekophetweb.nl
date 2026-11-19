@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureSuperadmin;
 use App\Support\LocalEnvironment;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -18,7 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->alias(['superadmin' => App\Http\Middleware\EnsureSuperadmin::class]);
+        $middleware->alias(['superadmin' => EnsureSuperadmin::class]);
 
         // Mail clients' one-click unsubscribe POSTs without a CSRF token; the URL is signed instead.
         $middleware->validateCsrfTokens(except: ['unsubscribe/*']);

@@ -26,7 +26,7 @@ it('edits ecosystems and CPEs from comma-separated input', function () {
         ->call('edit', $this->php->id)
         ->assertSet('form.osv_ecosystems', 'Packagist')
         ->set('form.osv_ecosystems', 'Packagist,  PHP-extra ,')
-        ->set('form.nvd_cpes', "cpe:2.3:a:php:php, cpe:2.3:a:php:pecl")
+        ->set('form.nvd_cpes', 'cpe:2.3:a:php:php, cpe:2.3:a:php:pecl')
         ->call('save')->assertHasNoErrors();
 
     expect($this->php->fresh()->osv_ecosystems)->toBe(['Packagist', 'PHP-extra'])

@@ -34,8 +34,7 @@ class StarToggle extends Component
     public function render()
     {
         return <<<'BLADE'
-            <button type="button" wire:click="toggle" class="btn-secondary" aria-pressed="{{ $starred ? 'true' : 'false' }}"
-                    title="Starred issues are shown first in your lists">
+            <button type="button" wire:click="toggle" class="btn-secondary" aria-pressed="{{ $starred ? 'true' : 'false' }}">
                 <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" class="mr-1.5"
                      fill="{{ $starred ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="2"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9z"/></svg>
                 {{ $starred ? 'Starred' : 'Star' }}

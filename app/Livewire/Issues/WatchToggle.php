@@ -34,8 +34,7 @@ class WatchToggle extends Component
     public function render()
     {
         return <<<'BLADE'
-            <button type="button" wire:click="toggle" class="btn-secondary" aria-pressed="{{ $watching ? 'true' : 'false' }}"
-                    title="Get an email when this issue changes">
+            <button type="button" wire:click="toggle" class="btn-secondary" aria-pressed="{{ $watching ? 'true' : 'false' }}">
                 {{ $watching ? 'Watching: email me updates' : 'Watch for updates' }}
             </button>
             BLADE;

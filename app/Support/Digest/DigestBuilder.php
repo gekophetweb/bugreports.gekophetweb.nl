@@ -2,6 +2,7 @@
 
 namespace App\Support\Digest;
 
+use App\Enums\Severity;
 use App\Models\Issue;
 use Illuminate\Support\Collection;
 
@@ -26,7 +27,7 @@ class DigestBuilder
             ->values()
             ->map(fn (Issue $issue) => [
                 'issue' => $issue,
-                'alerted' => $markCriticalAlerted && $issue->severity === \App\Enums\Severity::Critical,
+                'alerted' => $markCriticalAlerted && $issue->severity === Severity::Critical,
             ]);
 
         return new Digest(

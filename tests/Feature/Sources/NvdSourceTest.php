@@ -100,7 +100,7 @@ it('sends the api key header when configured and waits less between requests', f
     runNvd();
 
     Http::assertSent(fn (Request $r) => $r->hasHeader('apiKey', 'secret-key'));
-    expect($this->sleeps)->toBe([0.6]);
+    expect($this->sleeps)->toHaveCount(1)->and($this->sleeps[0])->toBeGreaterThan(0.3)->toBeLessThanOrEqual(0.6);
 });
 
 it('waits six seconds between requests without a key', function () {
@@ -109,7 +109,7 @@ it('waits six seconds between requests without a key', function () {
     runNvd();
 
     Http::assertSent(fn (Request $r) => ! $r->hasHeader('apiKey'));
-    expect($this->sleeps)->toBe([6.0]);
+    expect($this->sleeps)->toHaveCount(1)->and($this->sleeps[0])->toBeGreaterThan(5.0)->toBeLessThanOrEqual(6.0);
 });
 
 it('splits long ranges into windows of at most 120 days', function () {
@@ -136,4 +136,14 @@ it('records a failed run and keeps the cursor on 403', function () {
     $run = runNvd();
 
     expect($run->status)->toBe('failed')->and($run->error)->toContain('403')->and(SyncCursor::count())->toBe(0);
+});
+
+it('spaces requests across separate sync jobs', function () {
+    Http::fake(fn () => Http::response(['resultsPerPage' => 2000, 'startIndex' => 0, 'totalResults' => 0, 'vulnerabilities' => []]));
+    $apache = Language::factory()->create(['slug' => 'apache', 'nvd_cpes' => ['cpe:2.3:a:apache:http_server']]);
+
+    runNvd();
+    SyncFeed::dispatchSync(NvdSource::class, $apache->id, 'cpe:2.3:a:apache:http_server');
+
+    expect($this->sleeps)->toHaveCount(1)->and($this->sleeps[0])->toBeGreaterThan(5.0);
 });

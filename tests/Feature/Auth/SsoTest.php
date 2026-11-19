@@ -5,6 +5,7 @@ use App\Models\SocialAccount;
 use App\Models\User;
 use App\Support\Auth\SsoProviders;
 use App\Support\Settings;
+use Laravel\Socialite\Contracts\Provider;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as SocialiteUser;
 
@@ -23,7 +24,7 @@ function fakeGoogleUser(string $email = 'new@example.test', bool $verified = tru
     $user = (new SocialiteUser)->setRaw(['email_verified' => $verified])->map([
         'id' => $id, 'name' => 'New Person', 'email' => $email,
     ]);
-    $provider = Mockery::mock(Laravel\Socialite\Contracts\Provider::class);
+    $provider = Mockery::mock(Provider::class);
     $provider->allows('user')->andReturn($user);
     Socialite::shouldReceive('driver')->with('google')->andReturn($provider);
 }

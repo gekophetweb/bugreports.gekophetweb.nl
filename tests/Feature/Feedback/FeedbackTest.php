@@ -8,6 +8,7 @@ use App\Models\Feedback;
 use App\Models\User;
 use App\Notifications\FeedbackReceived;
 use App\Notifications\FeedbackStatusChanged;
+use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
 
@@ -92,7 +93,7 @@ it('does not email when only the note changes', function () {
 
     Livewire::test(AdminFeedback::class)->call('edit', $feedback->id)->set('note', 'Looking into it.')->call('save');
 
-    Notification::assertNotSentTo(new Illuminate\Notifications\AnonymousNotifiable, FeedbackStatusChanged::class);
+    Notification::assertNotSentTo(new AnonymousNotifiable, FeedbackStatusChanged::class);
     Notification::assertSentOnDemandTimes(FeedbackStatusChanged::class, 0);
 });
 

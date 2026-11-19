@@ -9,6 +9,7 @@ use App\Sources\Contracts\IssueSource;
 use App\Sources\IssueUpserter;
 use App\Support\Sleeper;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
@@ -40,15 +41,12 @@ class NvdSource implements IssueSource
     {
         $end = CarbonImmutable::now()->utc();
         $start = SyncCursor::get('nvd', $feed)?->utc() ?? $end->subDays(config('issues.backfill_days'));
-        $requests = 0;
 
         for ($from = $start; $from->lessThan($end); $from = $to) {
             $to = $from->addDays(self::MAX_WINDOW_DAYS)->min($end);
 
             for ($index = 0, $total = 1; $index < $total;) {
-                if ($requests++ > 0) {
-                    $this->sleeper->sleep(filled(config('issues.nvd_api_key')) ? 0.6 : 6.0);
-                }
+                $this->waitForTurn();
                 $page = $this->fetch($feed, $from, $to, $index);
 
                 foreach ($page['vulnerabilities'] ?? [] as $item) {
@@ -62,6 +60,24 @@ class NvdSource implements IssueSource
         }
 
         SyncCursor::put('nvd', $feed, $end);
+    }
+
+    /**
+     * Spaces NVD requests 6 s apart (0.6 s with an API key) across all jobs and workers, through the
+     * shared cache: every CPE is its own job and they run back to back.
+     */
+    private function waitForTurn(): void
+    {
+        $interval = filled(config('issues.nvd_api_key')) ? 0.6 : 6.0;
+
+        Cache::lock('nvd:throttle', 30)->block(30, function () use ($interval) {
+            $now = microtime(true);
+            $next = (float) Cache::get('nvd:next-request-at', 0);
+            if ($next > $now) {
+                $this->sleeper->sleep(round($next - $now, 3));
+            }
+            Cache::put('nvd:next-request-at', max($now, $next) + $interval, 300);
+        });
     }
 
     private function fetch(string $cpe, CarbonImmutable $from, CarbonImmutable $to, int $startIndex): array

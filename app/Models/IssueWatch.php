@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\URL;
 
 /** A watched issue: the user is emailed when it changes meaningfully. */
 class IssueWatch extends Model
@@ -22,6 +23,6 @@ class IssueWatch extends Model
 
     public function unwatchUrl(): string
     {
-        return \Illuminate\Support\Facades\URL::signedRoute('unsubscribe.watch', ['watch' => $this->id]);
+        return URL::signedRoute('unsubscribe.watch', ['watch' => $this->id]);
     }
 }

@@ -7,7 +7,6 @@ use App\Models\IssueWatch;
 use App\Models\Language;
 use App\Models\Subscription;
 use App\Models\User;
-use Illuminate\Support\Facades\URL;
 
 beforeEach(function () {
     $this->user = User::factory()->create();
