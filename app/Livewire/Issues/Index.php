@@ -87,6 +87,13 @@ class Index extends Component
             'severities' => array_filter(Severity::cases(), fn (Severity $s) => $s !== Severity::Unknown),
             'periods' => IssueQuery::PERIODS,
             'heading' => 'Security issues',
+            ...$this->extraViewData(),
         ]);
+    }
+
+    /** @return array<string, mixed> */
+    protected function extraViewData(): array
+    {
+        return [];
     }
 }

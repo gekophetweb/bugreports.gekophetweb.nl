@@ -5,6 +5,7 @@ use App\Http\Controllers\UnsubscribeController;
 use App\Livewire\Admin;
 use App\Livewire\Auth\Login;
 use App\Livewire\Issues;
+use App\Livewire\My;
 use App\Livewire\Setup;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -22,9 +23,8 @@ Route::middleware('signed')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-    // Replaced by the My account pages in Task 14.
-    Route::get('/my', Issues\Index::class)->name('my.issues');
-    Route::get('/my/settings', fn () => redirect()->route('my.issues'))->name('my.settings');
+    Route::get('/my', My\Issues::class)->name('my.issues');
+    Route::get('/my/settings', My\Settings::class)->name('my.settings');
 });
 
 Route::get('/login', Login::class)->middleware('guest')->name('login');
