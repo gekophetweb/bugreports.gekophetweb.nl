@@ -20,7 +20,9 @@ PostgreSQL 17, Redis 8, Docker Compose, cloudflared.
 - Branching: gitflow. Each task is a `feature/<task-slug>` branch off `develop`, finished with `git flow feature finish`, then `develop` pushed.
 - Tests: Pest, run with `php artisan test`. Tests use the `pgsql` connection against a `bugreports_test` DB (jsonb queries must be exercised for real); `Http::fake()` for every external call — no test touches the network.
 - Severity bands exactly: Critical 9.0–10.0, High 7.0–8.9, Medium 4.0–6.9, Low 0.1–3.9, else Unknown.
-- Schedules: OSV every 5 minutes, NVD every 10 minutes, daily digest 08:00 `Europe/Amsterdam`. All `withoutOverlapping()->onOneServer()`.
+- Schedules: OSV every 5 minutes, NVD every 10 minutes, daily digest 08:00 `Europe/Amsterdam`, weekly digest Monday 08:00 `Europe/Amsterdam`. All `withoutOverlapping()->onOneServer()`.
+- Digest shortening: first 20 items full, next 100 one-line, rest "and N more" linking to `/my` with filters. Watched-issue updates first, never shortened.
+- "Meaningful change" for watchers = any of `severity`, `cvss_score`, `description`, `references`, `withdrawn_at` changed. `modified_at` alone is not a change.
 - `SYNC_BACKFILL_DAYS=90`, `SYNC_INCLUDE_MALWARE=false`, `NVD_API_KEY=` (optional), announce window 7 days.
 - Email code: 6 digits, 10 min TTL, hashed, max 5 attempts per code, max 5 codes per email per hour.
 - App timezone `Europe/Amsterdam`; UI copy in English.
@@ -34,6 +36,7 @@ PostgreSQL 17, Redis 8, Docker Compose, cloudflared.
 3. **Two simultaneous first sign-ins** — exactly one superadmin; the setup token works once. (Tested in Task 3.)
 4. **Same CVE from OSV and NVD** — one issue row with both languages attached, not two. (Tested in Task 9.)
 5. **Mail settings changed while the queue worker runs** — the next queued mail uses the new mailer without restart. (Tested in Task 2.)
+6. **A user who subscribes to npm with min severity Low on weekly** — hundreds of items; the email stays readable (20 full / 100 one-line / "and N more"). (Tested in Task 13.)
 
 ---
 
@@ -42,12 +45,14 @@ PostgreSQL 17, Redis 8, Docker Compose, cloudflared.
 ```
 app/
   Enums/            Severity.php, Role.php, FeedbackStatus.php, FeedbackType.php, LanguageKind.php, SubscriptionFrequency.php
-  Models/           User, Setting, LoginCode, Language, Issue, SyncCursor, SyncRun, Subscription, Feedback
+  Models/           User, Setting, LoginCode, Language, Issue, SyncCursor, SyncRun, Subscription, IssueStar, IssueWatch, Feedback
   Support/
     Settings.php                 typed get/set over settings table (cached, encrypted secrets)
     Mail/MailConfigurator.php    applies stored mail settings to config
     Auth/SsoProviders.php        enabled providers + applies credentials to config('services.*')
     Cvss/Cvss31.php              vector -> base score
+    Issues/IssueQuery.php        shared filters (languages, severity, date, search) + starred-first ordering
+    Digest/DigestBuilder.php     builds full / one-line / overflow sections for digests
   Sources/
     Contracts/IssueSource.php    interface: feeds(Language): iterable<string>; sync(Language, string $feed, SyncRun): void
     Osv/OsvSource.php, Osv/OsvMapper.php
@@ -55,10 +60,12 @@ app/
     IssueData.php                DTO from mappers
     IssueUpserter.php            dedup + upsert + language attach
   Jobs/             SyncFeed.php, NotifySubscribers.php
-  Console/Commands/ SetupUrl.php, SyncSource.php, SendDailyDigest.php
-  Livewire/         Issues/Index, Issues/Show, Auth/Login, Setup, Feedback/Create, Feedback/Mine, Feedback/Status,
-                    Subscriptions, Admin/Mail, Admin/SignIn, Admin/Users, Admin/Languages, Admin/Feedback, Admin/Sync
-  Notifications/    LoginCodeNotification, NewIssuesNotification, DailyDigestNotification, FeedbackStatusChanged, FeedbackReceived
+  Console/Commands/ SetupUrl.php, SyncSource.php, SendDigest.php (digest:send {period : daily|weekly})
+  Livewire/         Issues/Index, Issues/Show, Issues/StarToggle, Issues/WatchToggle, Auth/Login, Setup,
+                    My/Issues, My/Settings, Feedback/Create, Feedback/Mine, Feedback/Status,
+                    Admin/Mail, Admin/SignIn, Admin/Users, Admin/Languages, Admin/Feedback, Admin/Sync
+  Notifications/    LoginCodeNotification, NewIssuesNotification, WatchedIssuesUpdatedNotification, DigestNotification,
+                    FeedbackStatusChanged, FeedbackReceived
   Http/Controllers/ SsoController.php, UnsubscribeController.php
 database/seeders/   LanguageSeeder.php
 docker/             entrypoint.sh
@@ -230,16 +237,16 @@ it('seeds nginx and apache as servers', ...);
 ### Task 8: OSV importer + sync bookkeeping
 
 **Files:**
-- Create: `app/Sources/Contracts/IssueSource.php`, `app/Sources/IssueData.php`, `app/Sources/IssueUpserter.php`, `app/Sources/Osv/OsvSource.php`, `app/Sources/Osv/OsvMapper.php`, models + migrations `sync_cursors` (`source`, `feed`, `cursor` timestamptz, unique(source, feed)), `sync_runs` (`source`, `feed`, `status` `running|ok|failed`, `created_count`, `updated_count`, `error` text null, `started_at`, `finished_at`, `new_issue_ids` jsonb), `app/Jobs/SyncFeed.php`
+- Create: `app/Sources/Contracts/IssueSource.php`, `app/Sources/IssueData.php`, `app/Sources/IssueUpserter.php`, `app/Sources/Osv/OsvSource.php`, `app/Sources/Osv/OsvMapper.php`, models + migrations `sync_cursors` (`source`, `feed`, `cursor` timestamptz, unique(source, feed)), `sync_runs` (`source`, `feed`, `status` `running|ok|failed`, `created_count`, `updated_count`, `error` text null, `started_at`, `finished_at`, `new_issue_ids` jsonb, `changed_issues` jsonb `{issue_id: [field, …]}`), migration `issue_changes` (`issue_id`, `fields` jsonb, `created_at`) — the history digests read for watched updates, `app/Jobs/SyncFeed.php`
 - Fixtures: `tests/Fixtures/osv/Packagist-modified_id.csv`, `tests/Fixtures/osv/GHSA-example.json`, `tests/Fixtures/osv/PYSEC-v4-only.json` — record real responses once (`curl`) and trim.
 - Test: `tests/Feature/Sources/OsvSourceTest.php`, `tests/Unit/OsvMapperTest.php`
 
 **Interfaces:**
-- Produces: `IssueSource::feeds(Language $l): array<string>` (OSV: the ecosystems), `IssueSource::sync(Language $l, string $feed, SyncRun $run): void`; `IssueData` readonly props mirroring `issues` columns + `languageId`; `IssueUpserter::upsert(IssueData $d): array{issue: Issue, created: bool}`; `SyncFeed::__construct(string $sourceClass, int $languageId, string $feed)`.
+- Produces: `IssueSource::feeds(Language $l): array<string>` (OSV: the ecosystems), `IssueSource::sync(Language $l, string $feed, SyncRun $run): void`; `IssueData` readonly props mirroring `issues` columns + `languageId`; `IssueUpserter::upsert(IssueData $d): array{issue: Issue, created: bool, changes: list<string>}` (`changes` = the meaningful fields from Global Constraints that differ from the stored row; empty when created; a non-empty result also writes an `issue_changes` row); `SyncFeed::__construct(string $sourceClass, int $languageId, string $feed)`.
 
 OSV flow: GET csv (lines `RFC3339,ID`, newest first); collect until timestamp ≤ cursor (or ≤ now−`SYNC_BACKFILL_DAYS` on first run); skip `MAL-` unless `SYNC_INCLUDE_MALWARE`; GET `https://api.osv.dev/v1/vulns/{id}` each (Http pool of 10). Mapper: title = `summary` ?: first 160 chars of `details`; severity = Cvss31 on first `CVSS_V3` entry, else `database_specific.severity` label, else Unknown; packages = `affected[].package.name` unique; `withdrawn` → `withdrawn_at`. Cursor advances to the newest processed timestamp only when the run ends `ok`. `SyncFeed` wraps in try/catch: on exception mark run `failed` with message, do not rethrow (so other feeds continue).
 
-- [ ] **Step 1: Tests** — imports two ids from fixture csv, creates issues linked to php; second run with same csv creates 0; `it('maps GHSA severity label when no v3 vector')`; `it('skips MAL ids by default')`; `it('records a failed run and keeps the cursor on 500')` (`Http::fake([... => Http::response('', 500)])`, cursor unchanged, run status `failed`); `it('respects the backfill window')`.
+- [ ] **Step 1: Tests** — imports two ids from fixture csv, creates issues linked to php; second run with same csv creates 0; `it('maps GHSA severity label when no v3 vector')`; `it('skips MAL ids by default')`; `it('records a failed run and keeps the cursor on 500')` (`Http::fake([... => Http::response('', 500)])`, cursor unchanged, run status `failed`); `it('respects the backfill window')`; `it('reports changed fields when severity changes')` (re-import fixture with edited vector → `changes` = `['severity','cvss_score']`, one `issue_changes` row, `changed_issues` on the run); `it('reports no change when only modified differs')`.
 - [ ] **Steps 2–4.** **Step 5:** Commit `feat: OSV importer with cursors and sync runs`; finish; push.
 
 ### Task 9: NVD importer + dedup
@@ -270,57 +277,104 @@ GET `https://services.nvd.nist.gov/rest/json/cves/2.0` with `virtualMatchString`
 - Consumes: `SyncFeed`, `OsvSource`, `NvdSource`, `Language`.
 - Produces: `issues:sync` dispatches one `SyncFeed` per (enabled language × feed). Routes `admin.sync`, `admin.languages`.
 
-`routes/console.php`: `Schedule::command('issues:sync osv')->everyFiveMinutes()`, `Schedule::command('issues:sync nvd')->everyTenMinutes()`, `Schedule::command('sync-runs:prune')->daily()` (delete >14 days), `Schedule::command('digest:send')->dailyAt('08:00')->timezone('Europe/Amsterdam')` — all `->withoutOverlapping()->onOneServer()`.
+`routes/console.php`: `Schedule::command('issues:sync osv')->everyFiveMinutes()`, `Schedule::command('issues:sync nvd')->everyTenMinutes()`, `Schedule::command('sync-runs:prune')->daily()` (delete >14 days), `Schedule::command('digest:send daily')->dailyAt('08:00')->timezone('Europe/Amsterdam')`, `Schedule::command('digest:send weekly')->weeklyOn(1, '08:00')->timezone('Europe/Amsterdam')` (the command itself lands in Task 13; register the schedule here) — all `->withoutOverlapping()->onOneServer()`.
 
-- [ ] **Step 1: Tests** — `it('schedules osv every five and nvd every ten minutes')` (inspect `app(Schedule::class)->events()` expressions `*/5 * * * *`, `*/10 * * * *`); `issues:sync osv` dispatches jobs only for enabled languages with ecosystems (`Queue::fake`); sync page lists last runs with failed error text; languages page toggles `enabled` and edits ecosystems/CPEs (comma-separated input → array).
+- [ ] **Step 1: Tests** — `it('schedules osv every five and nvd every ten minutes')` (inspect `app(Schedule::class)->events()` expressions `*/5 * * * *`, `*/10 * * * *`, weekly `0 8 * * 1`); `issues:sync osv` dispatches jobs only for enabled languages with ecosystems (`Queue::fake`); sync page lists last runs with failed error text; languages page toggles `enabled` and edits ecosystems/CPEs (comma-separated input → array).
 - [ ] **Steps 2–4.** **Step 5:** Commit `feat: scheduled syncing and admin sync/language pages`; finish; push.
 
-### Task 11: Public issues UI
+### Task 11: Public issues UI with filters
 
 **Files:**
-- Create: `app/Livewire/Issues/Index.php`, `Issues/Show.php` + views, `resources/views/components/severity-badge.blade.php`, `resources/views/layouts/app.blade.php`
-- Test: `tests/Feature/Issues/IndexTest.php`, `ShowTest.php`
+- Create: `app/Support/Issues/IssueQuery.php`, `app/Livewire/Issues/Index.php`, `Issues/Show.php` + views, `resources/views/components/severity-badge.blade.php`, `resources/views/components/issue-filters.blade.php`, `resources/views/layouts/app.blade.php`
+- Test: `tests/Feature/Issues/IndexTest.php`, `ShowTest.php`, `tests/Unit/IssueQueryTest.php`
 
 **Interfaces:**
 - Consumes: `Issue` scopes, `Severity`, `Language`.
-- Produces: routes `home` (`/`), `issues.show` (`/issues/{issue:external_id}`). Query-string bound filters `language`, `severity` (minimum), `q`.
+- Produces: `IssueQuery::apply(Builder $q, array $filters, ?User $user = null): Builder`. Filters: `languages` (list of slugs), `severity` (minimum), `period` (`24h|7d|30d|90d|custom|null`), `from`/`to` (Y-m-d, used when `period=custom`, inclusive, Europe/Amsterdam days), `date_field` (`published|modified`, default `published`), `q`. Ordering is newest first by the chosen date field; `$user` is reserved for starred-first ordering (Task 12). `IssueQuery::fromRequest(array $query): array` normalises and ignores invalid values. Routes `home` (`/`), `issues.show` (`/issues/{issue:external_id}`). Every filter is bound to the query string (`#[Url]`), so filtered views can be shared and linked from emails.
 
-Default list hides withdrawn; 25 per page; badge colours Critical red, High orange, Medium amber, Low slate, Unknown gray (text label always present, not colour-only). Search matches `external_id`, `aliases`, `title`, `packages` (ILIKE / jsonb text).
+The list hides withdrawn issues and shows 25 per page. Badge colours: Critical red, High orange, Medium amber, Low slate, Unknown gray. The badge always carries a text label, so severity is never shown by colour alone. Search matches `external_id`, `aliases`, `title` and `packages` (ILIKE, or jsonb text for the array columns). The date filter is a select with the presets and "Custom", which reveals two date inputs.
 
-- [ ] **Step 1: Tests** — lists newest first; filter by language; `severity=high` shows High+Critical only; search by alias CVE finds the OSV issue; show page links to `source_url` with `rel="noopener"`; withdrawn hidden from list but show page still 200 with "Withdrawn" label.
-- [ ] **Steps 2–4.** **Step 5:** Commit `feat: issue list and detail pages with severity badges`; finish; push.
+- [ ] **Step 1: Tests** — lists newest first; filter by one and by two languages; `severity=high` shows High+Critical only; `period=7d` excludes an issue published 8 days ago; `period=custom&from=2026-11-01&to=2026-11-10` includes issues on 1 Nov 00:30 and 10 Nov 23:30 Amsterdam time and excludes 11 Nov; `date_field=modified` filters on `modified_at`; an invalid `from` is ignored, not a 500; search by alias CVE finds the OSV issue; the show page links to `source_url` with `rel="noopener"`; a withdrawn issue is hidden from the list, but its show page still returns 200 with a "Withdrawn" label.
+- [ ] **Steps 2–4.** **Step 5:** Commit `feat: issue list and detail pages with language, severity and date filters`; finish; push.
 
-### Task 12: Subscriptions + notifications
+### Task 12: Stars and watching
 
 **Files:**
-- Create: `app/Models/Subscription.php` + migration (`user_id`, `language_id`, `min_severity`, `frequency`, unique(user_id, language_id)), `app/Enums/SubscriptionFrequency.php`, `app/Livewire/Subscriptions.php` + view, `app/Jobs/NotifySubscribers.php`, `app/Console/Commands/SendDailyDigest.php` (`digest:send`), `app/Notifications/NewIssuesNotification.php`, `DailyDigestNotification.php`, `app/Http/Controllers/UnsubscribeController.php` (signed URL)
-- Modify: `app/Jobs/SyncFeed.php` (dispatch `NotifySubscribers($run->id)` when run ok and `new_issue_ids` non-empty)
-- Test: `tests/Feature/Subscriptions/*Test.php`
+- Create: models + migrations `issue_stars` (`user_id`, `issue_id`, unique pair, timestamps), `issue_watches` (`user_id`, `issue_id`, unique pair, timestamps), `app/Livewire/Issues/StarToggle.php`, `Issues/WatchToggle.php` + views
+- Modify: `app/Support/Issues/IssueQuery.php` (starred first), the `Issues/Index` and `Issues/Show` views (toggles), `app/Models/User.php` (`starredIssues()`, `watchedIssues()` belongsToMany)
+- Test: `tests/Feature/Issues/StarTest.php`, `WatchTest.php`
 
 **Interfaces:**
-- Consumes: `SyncRun.new_issue_ids` (Task 8), `Issue::scopeMinSeverity`.
-- Produces: `Issue::scopeAnnounceable()` = `first_seen_at` set AND `published_at >= now()->subDays(7)` AND not withdrawn; route `subscriptions` (auth); signed route `unsubscribe` (`/unsubscribe/{subscription}`).
+- Consumes: `IssueQuery` (Task 11).
+- Produces: `IssueQuery::apply(..., ?User $user)` orders by `starred desc` and then the date, where `starred` = `EXISTS(issue_stars for user)`. It adds an `is_starred` select so views don't run N+1 queries. `User::hasStarred(Issue)`, `User::isWatching(Issue)`. Guests who click a toggle are sent to `login` with `intended` set to the current URL.
 
-- [ ] **Step 1: Tests** — user subscribes to php High/instant; `it('sends one email per user per run')` (3 new php issues → 1 `NewIssuesNotification` with 3 items); below min severity → none; `it('stays quiet for backfilled old issues')` (published 30 days ago → none); daily subscriber gets nothing instantly, one digest at `digest:send` covering last 24 h; unsigned unsubscribe → 403, signed → deletes subscription; guests redirected to login.
-- [ ] **Steps 2–4.** **Step 5:** Commit `feat: language subscriptions with instant and daily emails`; finish; push.
+- [ ] **Step 1: Tests** — starring puts an older issue above newer ones for that user only (a second user sees normal order); a starred issue that the active filters exclude stays hidden, because stars change the order, not the filters; toggling twice unstars; watch toggle creates and removes `issue_watches`; a guest toggling is redirected to login; the list page runs a constant number of queries with 25 starred rows (`DB::enableQueryLog`, count ≤ 6).
+- [ ] **Steps 2–4.** **Step 5:** Commit `feat: star issues to pin them and watch issues for updates`; finish; push.
 
-### Task 13: Feedback with status
+### Task 13: Subscriptions, watched-issue emails and digests
 
 **Files:**
-- Create: `app/Models/Feedback.php` + migration (`user_id` null, `name`, `email`, `type`, `message` text, `status`, `public_note` text null, `token` string(40) unique), enums `FeedbackStatus` (`New|InProgress|Planned|Done|Declined`), `FeedbackType` (`Bug|Idea|Other`), Livewire `Feedback/Create`, `Feedback/Mine`, `Feedback/Status`, `Admin/Feedback` + views, `FeedbackReceived`, `FeedbackStatusChanged` notifications
+- Create: `app/Models/Subscription.php` + migration (`user_id`, `language_id`, `min_severity`, `frequency`, unique(user_id, language_id)), `app/Enums/SubscriptionFrequency.php` (`Instant|Daily|Weekly`), `app/Jobs/NotifySubscribers.php`, `app/Support/Digest/DigestBuilder.php`, `app/Console/Commands/SendDigest.php` (`digest:send {period : daily|weekly}`), `app/Notifications/NewIssuesNotification.php`, `WatchedIssuesUpdatedNotification.php`, `DigestNotification.php`, `app/Http/Controllers/UnsubscribeController.php` (signed URLs)
+- Modify: `app/Jobs/SyncFeed.php` (when a run ends `ok` with new or changed issues, dispatch `NotifySubscribers($run->id)`)
+- Test: `tests/Feature/Notifications/InstantTest.php`, `WatchedUpdatesTest.php`, `DigestTest.php`, `UnsubscribeTest.php`, `tests/Unit/DigestBuilderTest.php`
+
+**Interfaces:**
+- Consumes: `SyncRun.new_issue_ids` and `SyncRun.changed_issues`, `issue_changes` (Task 8), `Issue::scopeMinSeverity`, `IssueWatch` (Task 12).
+- Produces: `Issue::scopeAnnounceable()` = `first_seen_at` set AND `published_at >= now()->subDays(7)` AND not withdrawn. `DigestBuilder::build(Collection $watchedUpdates, Collection $newIssues, array $filtersForLink): Digest`, where `Digest` is a readonly object with `watched` (all), `full` (≤20), `brief` (≤100), `overflowCount` (int) and `moreUrl` (`route('my.issues', $filtersForLink)`). Items are ranked by `Severity::rank()` desc, then `published_at` desc. Signed routes `unsubscribe.subscription` (`/unsubscribe/s/{subscription}`) and `unsubscribe.watch` (`/unsubscribe/w/{watch}`).
+
+`NotifySubscribers`:
+- **Instant language subscribers** get one `NewIssuesNotification` per user per run (the announceable new issues matching their language and minimum severity, built with `DigestBuilder`).
+- **Watchers** of any issue in `changed_issues` get one `WatchedIssuesUpdatedNotification` per user per run, listing each issue and the fields that changed. A user who is both gets two separate emails, because the two have different unsubscribe links.
+
+`digest:send daily|weekly`: for each user with at least one subscription of that frequency, collect the announceable new issues from their subscribed languages (published in the last 24 h or 7 d, at or above each subscription's minimum severity), plus the `issue_changes` on their watched issues in the same window. Skip users with nothing to send.
+
+- [ ] **Step 1: Tests**
+  - Instant: 3 new php issues → 1 email containing 3 items; an issue below the minimum severity → no email; a backfilled issue published 30 days ago → no email.
+  - Watch: a severity change on a watched issue → 1 `WatchedIssuesUpdatedNotification` naming `severity`; a change on an unwatched issue → none; a modified-only re-import → none.
+  - Daily: the subscriber gets nothing instantly, and `digest:send daily` sends 1 digest covering the last 24 h.
+  - Weekly: `digest:send weekly` covers 7 days and includes watched-issue changes.
+  - `DigestBuilder` with 150 items → `full` 20, `brief` 100, `overflowCount` 30; ranking puts a Critical from 6 days ago before a High from today; `moreUrl` contains `languages[]=php` and `period=7d`.
+  - Watched updates are never shortened (130 watched changes → all 130 in `watched`).
+  - Unsigned unsubscribe → 403; signed → deletes only that subscription or watch.
+- [ ] **Steps 2–4.** **Step 5:** Commit `feat: instant, daily and weekly emails for subscriptions and watched issues`; finish; push.
+
+### Task 14: My account
+
+**Files:**
+- Create: `app/Livewire/My/Issues.php`, `My/Settings.php` + views, account menu in `layouts/app.blade.php`
+- Test: `tests/Feature/My/MyIssuesTest.php`, `MySettingsTest.php`
+
+**Interfaces:**
+- Consumes: `IssueQuery` (Tasks 11–12), `Subscription`, `IssueStar`, `IssueWatch`.
+- Produces: routes (all `auth`) `my.issues` (`/my`), `my.settings` (`/my/settings`). `my.issues` accepts every `IssueQuery` filter plus the toggles `subscribed`, `watched` and `starred` (booleans, all true by default). Issues are included when any active toggle matches: the issue is in a subscribed language (at or above that subscription's minimum severity), or the user watches it, or the user starred it.
+
+On the settings page, the user can add, edit and remove language subscriptions (language, minimum severity, frequency), see their watched issues with an unwatch button, and change their name. A user with no subscriptions, watches or stars sees an empty state that links to the settings page.
+
+- [ ] **Step 1: Tests** — shows only issues from subscribed languages; respects the subscription's minimum severity; with only `watched` on, shows just the watched issues; a starred issue from an unsubscribed language appears while `starred` is on; starred issues come first; date and severity filters narrow further; a guest is redirected to login; settings: adding php/Medium/weekly saves a subscription, a duplicate language is rejected, and unwatching removes the watch.
+- [ ] **Steps 2–4.** **Step 5:** Commit `feat: My account with personal issue view and email settings`; finish; push.
+
+### Task 15: Feedback with status
+
+**Files:**
+- Create: `app/Models/Feedback.php` + migration (`user_id` null, `name`, `email`, `type`, `message` text, `status`, `public_note` text null, `token` string(40) unique), enums `FeedbackStatus` (`New|InProgress|Planned|Done|Declined`) and `FeedbackType` (`Bug|Idea|Other`), Livewire `Feedback/Create`, `Feedback/Mine`, `Feedback/Status`, `Admin/Feedback` + views, `FeedbackReceived` and `FeedbackStatusChanged` notifications
 - Test: `tests/Feature/Feedback/*Test.php`
 
 **Interfaces:**
-- Produces: routes `feedback.create` (`/feedback`), `feedback.mine` (auth), `feedback.status` (`/feedback/{token}`), `admin.feedback`. Rate limiter `feedback` 5/hour per IP.
+- Produces: routes `feedback.create` (`/feedback`), `feedback.mine` (`/my/feedback`, auth), `feedback.status` (`/feedback/{token}`), `admin.feedback`. Rate limiter `feedback`: 5 per hour per IP.
 
-- [ ] **Step 1: Tests** — guest submits, receives `FeedbackReceived` with status link, status page shows "New"; signed-in submit prefills email and appears in "My feedback"; admin changes status to Planned with note → submitter gets `FeedbackStatusChanged`, status page shows note; wrong token 404; 6th submission in an hour rejected; non-admin cannot reach `admin.feedback`.
+- [ ] **Step 1: Tests** — a guest submits, receives `FeedbackReceived` with the status link, and the status page shows "New"; a signed-in submission prefills the email and appears under My feedback; the admin sets the status to Planned with a note → the submitter gets `FeedbackStatusChanged` and the status page shows the note; a wrong token → 404; the 6th submission in an hour is rejected; a non-admin cannot reach `admin.feedback`.
 - [ ] **Steps 2–4.** **Step 5:** Commit `feat: feedback form with status tracking`; finish; push.
 
-### Task 14: Docs, release
+### Task 16: Docs, release
 
 **Files:**
-- Modify: `README.md` (local dev, `.env` values, first-run setup link via `docker compose logs app`, mail/SSO setup, Google OAuth redirect URI `https://bugreports.gekophetweb.nl/auth/google/callback`, Cloudflare Tunnel: create tunnel → public hostname `bugreports.gekophetweb.nl` → service `http://app:8000` → `CLOUDFLARE_TUNNEL_TOKEN` → `docker compose --profile tunnel up -d`, NVD API key, backups).
+- Modify: `README.md`. Cover:
+  - local development and the `.env` values;
+  - the first-run setup link, found with `docker compose logs app`;
+  - mail and SSO setup, including the Google OAuth redirect URI `https://bugreports.gekophetweb.nl/auth/google/callback`;
+  - the Cloudflare Tunnel: create a tunnel → add the public hostname `bugreports.gekophetweb.nl` → point it at the service `http://app:8000` → set `CLOUDFLARE_TUNNEL_TOKEN` → run `docker compose --profile tunnel up -d`;
+  - the NVD API key, and backups.
 
-- [ ] **Step 1:** Fresh-clone smoke test: `cp .env.example .env`, fill DB/Redis passwords, `docker compose up -d --build`, open setup link from logs, create admin, set mailer `log`, run `docker compose exec app php artisan issues:sync osv --language=php`, wait for queue, confirm issues on `/`.
-- [ ] **Step 2:** `php artisan test` all green; `vendor/bin/pint --test` clean.
-- [ ] **Step 3:** Commit `docs: deployment and setup guide`; push `develop`. `git flow release start 0.1.0`, `git flow release finish 0.1.0`, push `main`, `develop`, tags.
+- [ ] **Step 1:** Smoke-test from a fresh clone: `cp .env.example .env`, fill in the DB and Redis passwords, run `docker compose up -d --build`, open the setup link from the logs and create the admin, set the mailer to `log`, run `docker compose exec app php artisan issues:sync osv --language=php`, wait for the queue, and confirm issues appear on `/`. Then star one, watch one, subscribe to php weekly, run `digest:send weekly`, and check the log mail.
+- [ ] **Step 2:** `php artisan test` is all green and `vendor/bin/pint --test` is clean.
+- [ ] **Step 3:** Commit `docs: deployment and setup guide` and push `develop`. Then `git flow release start 0.1.0`, `git flow release finish 0.1.0`, and push `main`, `develop` and the tags.

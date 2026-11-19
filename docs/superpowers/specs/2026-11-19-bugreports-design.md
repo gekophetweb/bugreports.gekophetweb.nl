@@ -16,7 +16,11 @@ users subscribe to the languages they care about and get emailed about new issue
 - Severity shown on every issue: Critical / High / Medium / Low / Unknown, from the CVSS score.
 - New and changed issues picked up automatically every 5–10 minutes.
 - Sign-in with Google (SSO, on by default once configured) or with a one-time code sent by email.
-- Subscriptions per language, with a minimum severity, sent instantly or as a daily digest.
+- Subscriptions per language, with a minimum severity, sent instantly, as a daily digest or as a weekly digest.
+- Watching single issues: opt in per issue to get emailed when it is updated.
+- Starring issues so they are shown first.
+- A personal "My issues" view showing only subscribed languages and/or watched and starred issues.
+- Filters on language, severity and date.
 - A feedback form; the submitter can see its status and is emailed when the status changes.
 - The first user becomes superadmin. The superadmin sets up outgoing mail (SMTP, Resend, Mailgun, Postmark) and
   SSO credentials in the website, without editing files.
@@ -87,13 +91,16 @@ users subscribe to the languages they care about and get emailed about new issue
 
 ### Website
 
-- **Home / issues list:** newest first. Filters for language, severity and search text (id, alias, title,
-  package). Each row shows a severity badge, the id, the title, the languages, the packages, the published
+- **Home / issues list:** newest first, with the signed-in user's starred issues above the rest (still under the
+  same filters). Filters for language (several can be picked), minimum severity, date, and search text (id,
+  alias, title, package). The date filter has quick choices (last 24 hours, 7 days, 30 days, 90 days) and a custom
+  from/to range. It filters on the published date by default and can be switched to the last-updated date.
+  *(My call.)* Each row shows a severity badge, the id, the title, the languages, the packages, the published
   date, and a link to the source.
 - **Issue page:** description, CVSS score and vector, aliases, affected packages, references, and a link to the
   source (`osv.dev/vulnerability/{id}`, `github.com/advisories/{id}` or `nvd.nist.gov/vuln/detail/{id}`).
 - **Feedback:** anyone can send it (name, email, type bug / idea / other, message). Statuses are New → In
-  progress / Planned → Done / Declined. Signed-in users see their feedback under "My feedback". Guests get a
+  progress / Planned → Done / Declined. Signed-in users see their feedback under My account → My feedback. Guests get a
   private status link by email. The superadmin changes the status and can add a public note, and the submitter
   is emailed about the change.
 
@@ -117,13 +124,38 @@ users subscribe to the languages they care about and get emailed about new issue
   before every queued job, so the queue worker picks up changes without a restart.
 - A "Send test email" button checks the settings work.
 
-### Subscriptions
+### Subscriptions, watching and starring
 
-- A user subscribes per language, with a minimum severity (default High) and a frequency (`instant` | `daily`).
-- **Instant:** after each sync run, each subscriber gets one email listing that run's new matching issues.
-- **Daily:** a digest at 08:00 Europe/Amsterdam.
-- Only issues first seen by us *and* published in the last 7 days are announced, so the first import stays quiet.
-- Every email has a one-click unsubscribe link.
+- **Language subscriptions:** a user subscribes per language, with a minimum severity (default High) and a
+  frequency (`instant` | `daily` | `weekly`).
+  - **Instant:** after each sync run, each subscriber gets one email listing that run's new matching issues.
+  - **Daily:** a digest at 08:00 Europe/Amsterdam covering the last 24 hours.
+  - **Weekly:** a digest on Monday at 08:00 Europe/Amsterdam covering the last 7 days.
+- **Watching an issue:** a "Watch" toggle on the issue page (signed-in users only) opts in to emails when that
+  issue changes. A change counts when the severity, CVSS score, description, references or withdrawn status
+  changes; a bare "modified" timestamp does not. Each user gets at most one "watched issues updated" email per
+  sync run. Watched-issue updates also go into the user's daily or weekly digest if they have one. *(My call: the
+  instant email is the opt-in; the digest repeats it as a summary.)*
+- **Starring an issue:** the star toggle shows on the list and on the issue page. Starred issues go to the top of
+  every list the user sees. Starring and watching are separate: a star pins an issue, watching sends email.
+  *(My call.)*
+- **Shortening long digests:** the first 20 items (ranked by severity, then newest) are shown in full with
+  severity, title, packages and link. The next 100 are shown as one line each (severity · id · title). Anything
+  beyond that becomes "and N more", linking to My issues with the matching filters already set. Watched-issue
+  updates always come first and are never shortened.
+- Only issues first seen by us *and* published in the last 7 days are announced as new, so the first import stays
+  quiet.
+- Every email has a one-click unsubscribe link (for the subscription or the watch it came from) and a link to the
+  email settings.
+
+### My account
+
+- **My issues** (`/my`): the issue list limited to the user's subscribed languages and/or their watched and
+  starred issues, picked with the toggles "Subscribed languages", "Watched" and "Starred" (all on by default).
+  Starred issues come first, and the language, severity, date and search filters all work here too.
+- **Settings** (`/my/settings`): language subscriptions (language, minimum severity, frequency), the list of
+  watched issues with an unwatch button, and the user's name.
+- **My feedback** (`/my/feedback`): see Feedback.
 
 ### Docker and the tunnel
 
