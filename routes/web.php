@@ -28,4 +28,6 @@ Route::middleware(['auth', 'superadmin'])->prefix('admin')->name('admin.')->grou
     Route::get('/mail', Admin\Mail::class)->name('mail');
     Route::get('/sign-in', Admin\SignIn::class)->name('sign-in');
     Route::get('/users', Admin\Users::class)->name('users');
+    Route::get('/languages', Admin\Languages::class)->name('languages');
+    Route::get('/sync', Admin\Sync::class)->name('sync');
 });
