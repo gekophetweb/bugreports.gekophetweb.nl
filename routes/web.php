@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\SsoController;
+use App\Livewire\Admin;
 use App\Livewire\Auth\Login;
 use App\Livewire\Setup;
 use Illuminate\Support\Facades\Auth;
@@ -24,6 +25,7 @@ Route::post('/logout', function () {
 })->middleware('auth')->name('logout');
 
 Route::middleware(['auth', 'superadmin'])->prefix('admin')->name('admin.')->group(function () {
-    // Replaced by the Livewire admin pages in Task 6.
-    Route::get('/mail', fn () => 'Mail settings')->name('mail');
+    Route::get('/mail', Admin\Mail::class)->name('mail');
+    Route::get('/sign-in', Admin\SignIn::class)->name('sign-in');
+    Route::get('/users', Admin\Users::class)->name('users');
 });
