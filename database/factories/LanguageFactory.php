@@ -20,6 +20,7 @@ class LanguageFactory extends Factory
             'enabled' => true,
             'osv_ecosystems' => [],
             'nvd_cpes' => [],
+            'github_repos' => [],
         ];
     }
 }

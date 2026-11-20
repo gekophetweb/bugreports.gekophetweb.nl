@@ -10,7 +10,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-/** Admin → Languages: which languages and servers are synced, and from which OSV ecosystems and NVD CPEs. */
+/** Admin → Languages: which languages and servers are synced, and from which OSV ecosystems, NVD CPEs and GitHub repositories. */
 #[Layout('layouts.app')]
 #[Title('Languages')]
 class Languages extends Component
@@ -21,8 +21,8 @@ class Languages extends Component
 
     public bool $editing = false;
 
-    /** @var array{slug: string, name: string, kind: string, osv_ecosystems: string, nvd_cpes: string} */
-    public array $form = ['slug' => '', 'name' => '', 'kind' => 'language', 'osv_ecosystems' => '', 'nvd_cpes' => ''];
+    /** @var array{slug: string, name: string, kind: string, osv_ecosystems: string, nvd_cpes: string, github_repos: string} */
+    public array $form = ['slug' => '', 'name' => '', 'kind' => 'language', 'osv_ecosystems' => '', 'nvd_cpes' => '', 'github_repos' => ''];
 
     public function toggle(int $id): void
     {
@@ -35,7 +35,7 @@ class Languages extends Component
         $this->resetErrorBag();
         $this->editingId = null;
         $this->editing = true;
-        $this->form = ['slug' => '', 'name' => '', 'kind' => 'language', 'osv_ecosystems' => '', 'nvd_cpes' => ''];
+        $this->form = ['slug' => '', 'name' => '', 'kind' => 'language', 'osv_ecosystems' => '', 'nvd_cpes' => '', 'github_repos' => ''];
     }
 
     public function edit(int $id): void
@@ -50,6 +50,7 @@ class Languages extends Component
             'kind' => $language->kind->value,
             'osv_ecosystems' => implode(', ', $language->osv_ecosystems ?? []),
             'nvd_cpes' => implode(', ', $language->nvd_cpes ?? []),
+            'github_repos' => implode(', ', $language->github_repos ?? []),
         ];
     }
 
@@ -73,6 +74,13 @@ class Languages extends Component
                     }
                 }
             }],
+            'form.github_repos' => ['nullable', 'string', 'max:1000', function ($attribute, $value, $fail) {
+                foreach (self::split((string) $value) as $repo) {
+                    if (! preg_match('~^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$~', $repo)) {
+                        $fail("\"$repo\" is not a GitHub repository like owner/name.");
+                    }
+                }
+            }],
         ]);
 
         $attributes = [
@@ -81,6 +89,7 @@ class Languages extends Component
             'kind' => $this->form['kind'],
             'osv_ecosystems' => self::split($this->form['osv_ecosystems']),
             'nvd_cpes' => self::split($this->form['nvd_cpes']),
+            'github_repos' => self::split($this->form['github_repos']),
         ];
 
         $this->editingId
