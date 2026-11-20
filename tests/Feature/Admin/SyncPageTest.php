@@ -34,3 +34,8 @@ it('starts a sync on demand', function () {
 it('is forbidden for normal users', function () {
     $this->actingAs(User::factory()->create())->get(route('admin.sync'))->assertForbidden();
 });
+
+it('explains how often each source is checked', function () {
+    $this->get(route('admin.sync'))->assertOk()
+        ->assertSee('Cloudflare Radar Zero Wire')->assertSee('every 30 minutes')->assertSee('no fixed schedule');
+});
