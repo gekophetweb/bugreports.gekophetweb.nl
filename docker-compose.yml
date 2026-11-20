@@ -23,7 +23,8 @@ services:
       redis: { condition: service_healthy }
     networks: [frontend, backend]
     ports:
-      - "127.0.0.1:8000:8000"   # localhost only; the Cloudflare tunnel reaches app:8000 directly
+      # localhost only; APP_PORT in .env picks the host port. The Cloudflare tunnel reaches app:8000 directly.
+      - "127.0.0.1:${APP_PORT:-8000}:8000"
 
   # Syncs and notification fan-out (long jobs, up to 15 minutes).
   queue:

@@ -51,6 +51,7 @@ Change at least these values in `.env`:
 | `REDIS_PASSWORD` | Another long random password |
 | `APP_URL` | The public URL, e.g. `https://bugreports.gekophetweb.nl` |
 | `SESSION_SECURE_COOKIE` | `true` behind HTTPS (the tunnel). Use `false` only to try it on `http://127.0.0.1:8000`, or signing in will not work |
+| `APP_PORT` | Only if port 8000 is already taken on the host (`port is already allocated`), e.g. `8080`. The tunnel still uses `app:8000` |
 
 Leave `APP_KEY` empty: the first start generates it into `storage/app/.env.local` in the `app_storage` volume.
 Mail and SSO are set up later in the website, not here.
@@ -72,7 +73,7 @@ docker compose logs app | grep -A1 "No superadmin"
 ```
 
 Open the setup link from the log. It works once and creates the superadmin. Until then nobody can sign in.
-The app listens on `127.0.0.1:8000` only; to reach it from the internet, set up the
+The app listens on `127.0.0.1:8000` only (or the `APP_PORT` you set); to reach it from the internet, set up the
 [Cloudflare Tunnel](#cloudflare-tunnel) below.
 
 ### Update to a new release
