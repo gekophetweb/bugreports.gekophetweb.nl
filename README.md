@@ -128,9 +128,13 @@ site's exact redirect URLs to copy. The NVD key can be saved and tested right on
 ## Cloudflare Tunnel
 
 1. In Cloudflare Zero Trust, go to Networks → Tunnels and create a tunnel (type *Cloudflared*). Copy its token.
-2. Add a public hostname: `bugreports.gekophetweb.nl` → service `HTTP` → `app:8000`.
+2. Add a public hostname: `bugreports.gekophetweb.nl` → service `HTTP` → `app:8000`. This also creates the DNS
+   record. Use `app:8000` even if you changed `APP_PORT`: the tunnel reaches the app inside Docker.
 3. Put the token in `.env` as `CLOUDFLARE_TUNNEL_TOKEN=...` and make sure `APP_URL=https://bugreports.gekophetweb.nl`.
-4. Run `docker compose --profile tunnel up -d`.
+4. Also add `COMPOSE_PROFILES=tunnel` to `.env`. The `cloudflared` container is in the `tunnel` profile, so without
+   this a plain `docker compose up -d` (and `./docker/update.sh`) never starts it and Cloudflare shows the tunnel
+   as down.
+5. Run `docker compose up -d` and check `docker compose logs cloudflared` for "Registered tunnel connection".
 
 `TRUSTED_PROXIES` must stay the `frontend` subnet from `docker-compose.yml` (`172.29.0.0/24`), so the app
 trusts `cloudflared`'s forwarded headers and nobody else's.
