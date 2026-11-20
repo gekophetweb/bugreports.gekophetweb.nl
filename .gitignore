@@ -27,3 +27,5 @@ Homestead.yaml
 Thumbs.db
 /.superpowers
 /docker-compose.override.yml
+/backups
+/.update.lock

@@ -78,9 +78,25 @@ The app listens on `127.0.0.1:8000` only; to reach it from the internet, set up 
 ### Update to a new release
 
 ```sh
-git pull
-docker compose up -d --build   # migrations run on start
+./docker/update.sh             # does nothing if there is no new release on main
+./docker/update.sh --check     # only says whether an update is available
+./docker/update.sh --force     # back up, rebuild and restart anyway
 ```
+
+The script backs up the database to `backups/` (the newest 14 are kept), pulls the new release, rebuilds,
+restarts (migrations run on start) and waits until the app is healthy. If it is not, the script prints how to
+roll back. It refuses to run when the checkout is not on `main` or has local changes.
+
+To update automatically, run it from cron, for example every night at 04:00:
+
+```sh
+crontab -e
+# then add (with the path to your checkout):
+0 4 * * * cd /path/to/bugreports && ./docker/update.sh >> update.log 2>&1
+```
+
+Settings, as environment variables: `UPDATE_BRANCH` (default `main`), `BACKUP_DIR` (`./backups`),
+`KEEP_BACKUPS` (14) and `HEALTH_TIMEOUT` (180 seconds).
 
 ### Stop or remove
 
