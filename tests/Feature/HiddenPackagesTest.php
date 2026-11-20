@@ -19,6 +19,8 @@ use App\Notifications\DigestNotification;
 use App\Notifications\NewIssuesNotification;
 use App\Notifications\WatchedIssuesUpdatedNotification;
 use App\Support\Issues\HiddenPackages;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
 
@@ -133,10 +135,6 @@ it('hides a package from the list and from the issue page', function () {
     expect($user->fresh()->hidden_packages)->toBe(['silverstripe/framework', 'other/pkg']);
 });
 
-it('sends guests who try to hide a package to sign in', function () {
-    Livewire::test(Index::class)->call('hidePackage', 'silverstripe/framework')->assertRedirect(route('login'));
-});
-
 // --- Email settings ---
 
 it('adds and removes hidden packages in email settings', function () {
@@ -199,4 +197,45 @@ it('leaves hidden packages out of digests', function () {
 
     Notification::assertSentTo($user, DigestNotification::class,
         fn ($n) => collect($n->digest->full)->pluck('issue.external_id')->all() === ['OK']);
+});
+
+// --- Visitors (cookie) ---
+
+it('lets visitors hide a package in a cookie', function () {
+    Livewire::test(Index::class)->call('hidePackage', 'SilverStripe/Framework')->assertNoRedirect();
+
+    expect(Cookie::hasQueued(HiddenPackages::COOKIE))->toBeTrue()
+        ->and(json_decode(Cookie::queued(HiddenPackages::COOKIE)->getValue(), true))->toBe(['silverstripe/framework']);
+});
+
+it('leaves the packages in the visitor cookie out of the list, and can show them again', function () {
+    pkgIssue($this->php, 'SS', ['silverstripe/framework']);
+    pkgIssue($this->php, 'OK', ['laravel/framework']);
+    $cookie = [HiddenPackages::COOKIE => json_encode(['silverstripe/*'])];
+
+    $list = Livewire::withCookies($cookie)->test(Index::class);
+    expect($list->viewData('issues')->pluck('external_id')->all())->toBe(['OK'])
+        ->and($list->viewData('hiddenCount'))->toBe(1)
+        ->and($list->viewData('hiddenPackages'))->toBe(['silverstripe/*']);
+
+    $list->call('unhidePackage', 'silverstripe/*');
+    expect(json_decode(Cookie::queued(HiddenPackages::COOKIE)->getValue(), true))->toBe([]);
+});
+
+it('ignores a tampered visitor cookie', function () {
+    pkgIssue($this->php, 'SS', ['silverstripe/framework']);
+
+    $list = Livewire::withCookies([HiddenPackages::COOKIE => '{"not":"a list"} or worse'])->test(Index::class);
+
+    expect($list->viewData('issues')->pluck('external_id')->all())->toBe(['SS']);
+});
+
+it('moves the visitor cookie into the account on sign-in', function () {
+    $user = hider(['acme/*']);
+    request()->cookies->set(HiddenPackages::COOKIE, json_encode(['silverstripe/framework', 'acme/*']));
+
+    event(new Login('web', $user, false));
+
+    expect($user->fresh()->hidden_packages)->toBe(['acme/*', 'silverstripe/framework'])
+        ->and(Cookie::queued(HiddenPackages::COOKIE)->getExpiresTime())->toBeLessThan(time());
 });

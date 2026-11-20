@@ -46,14 +46,12 @@
                     <ul class="space-y-1">
                         @foreach ($issue->packages as $package)
                             <li>{{ $package }}
-                                @auth
-                                    @if (\App\Support\Issues\HiddenPackages::hides(auth()->user()->hiddenPackages(), [$package]))
-                                        <span class="text-xs text-[--muted]">(hidden)</span>
-                                    @else
-                                        <button type="button" wire:click="hidePackage(@js($package))" class="row__hide"
-                                                title="Hide issues of {{ $package }} from your lists and emails">Hide</button>
-                                    @endif
-                                @endauth
+                                @if (\App\Support\Issues\HiddenPackages::hides($this->hiddenPackages(), [$package]))
+                                    <span class="text-xs text-[--muted]">(hidden)</span>
+                                @else
+                                    <button type="button" wire:click="hidePackage(@js($package))" class="row__hide"
+                                            title="Hide issues of {{ $package }} from your lists{{ auth()->check() ? ' and emails' : '' }}">Hide</button>
+                                @endif
                             </li>
                         @endforeach
                     </ul>

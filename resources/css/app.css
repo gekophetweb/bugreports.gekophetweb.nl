@@ -152,6 +152,10 @@ summary:focus-visible {
 
     .feed-head { @apply flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b pb-3; border-color: var(--line); }
     .feed-head__hidden { @apply w-full text-sm; color: var(--muted); }
+    .hidden-chips { @apply mt-1 flex flex-wrap gap-2; }
+    .hidden-chips__item { @apply inline-flex items-center gap-1 rounded border px-2 py-0.5 text-xs; border-color: var(--line); }
+    .hidden-chips__item button { @apply leading-none; color: var(--muted); }
+    .hidden-chips__item button:hover { color: var(--signal); }
     .row__hide { @apply text-xs underline underline-offset-2; color: var(--muted); }
     .row__hide:hover { color: var(--signal); }
     .feed-head__sync { @apply flex w-full flex-wrap gap-x-2 text-xs; color: var(--muted); }
