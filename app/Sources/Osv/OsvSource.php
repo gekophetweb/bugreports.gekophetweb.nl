@@ -2,6 +2,7 @@
 
 namespace App\Sources\Osv;
 
+use App\Models\Issue;
 use App\Models\Language;
 use App\Models\SyncCursor;
 use App\Models\SyncRun;
@@ -41,8 +42,17 @@ class OsvSource implements IssueSource
 
     public function sync(Language $language, string $feed, SyncRun $run): void
     {
-        $since = SyncCursor::get('osv', $feed) ?? now()->subDays(config('issues.backfill_days'))->toImmutable();
-        [$ids, $newest] = $this->batch($this->changedSince($feed, $since));
+        $cursor = SyncCursor::get('osv', $feed);
+        $since = $cursor ?? now()->subDays(config('issues.backfill_days'))->toImmutable();
+
+        // Records can reach the index late with a timestamp before the cursor, so re-read a while back.
+        // Those are fetched on top of the batch and never move the cursor, so they cannot stall it.
+        $scanFrom = $cursor ? $cursor->subMinutes((int) config('issues.lookback_minutes')) : $since;
+        $changes = $this->changedSince($feed, $scanFrom);
+        $recheck = array_values(array_filter($changes, fn (array $c) => $c[1]->lessThanOrEqualTo($since)));
+        [$ids, $newest] = $this->batch(array_values(array_filter($changes, fn (array $c) => $c[1]->greaterThan($since))));
+        $inBatch = array_flip($ids);
+        $ids = $this->notUpToDate([...$recheck, ...array_filter($changes, fn (array $c) => isset($inBatch[$c[0]]))]);
 
         foreach (array_chunk($ids, self::CONCURRENCY) as $chunk) {
             $responses = Http::pool(fn (Pool $pool) => array_map(
@@ -97,6 +107,37 @@ class OsvSource implements IssueSource
         $ids = array_keys(array_fill_keys(array_column($changes, 0), true));
 
         return [$ids, $changes === [] ? null : end($changes)[1]];
+    }
+
+    /**
+     * Drops records whose stored copy is already as new as the index says, so re-reading is cheap.
+     *
+     * @param  list<array{string, CarbonImmutable}>  $changes
+     * @return list<string> ids to fetch, oldest first
+     */
+    private function notUpToDate(array $changes): array
+    {
+        $latest = [];
+        foreach ($changes as [$id, $modified]) {
+            if (! isset($latest[$id]) || $modified->greaterThan($latest[$id])) {
+                $latest[$id] = $modified;
+            }
+        }
+        if ($latest === []) {
+            return [];
+        }
+        uasort($latest, fn (CarbonImmutable $a, CarbonImmutable $b) => $a <=> $b);
+
+        $stored = Issue::query()->whereIn('external_id', array_map('strval', array_keys($latest)))
+            ->whereNotNull('modified_at')->pluck('modified_at', 'external_id');
+
+        // Stored times are whole seconds; the index has fractions.
+        return array_map('strval', array_keys(array_filter(
+            $latest,
+            fn (CarbonImmutable $modified, string|int $id) => ! isset($stored[$id])
+                || CarbonImmutable::parse($stored[$id])->lessThan($modified->startOfSecond()),
+            ARRAY_FILTER_USE_BOTH,
+        )));
     }
 
     /** When the first $limit records all share one timestamp, take that whole group. */

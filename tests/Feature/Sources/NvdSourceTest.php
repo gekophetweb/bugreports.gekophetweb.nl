@@ -147,3 +147,15 @@ it('spaces requests across separate sync jobs', function () {
 
     expect($this->sleeps)->toHaveCount(1)->and($this->sleeps[0])->toBeGreaterThan(5.0);
 });
+
+it('starts each run the lookback window before the cursor', function () {
+    Http::fake(fn () => Http::response(['resultsPerPage' => 2000, 'startIndex' => 0, 'totalResults' => 0, 'vulnerabilities' => []]));
+    runNvd();
+
+    $this->travel(10)->minutes();
+    SyncFeed::dispatchSync(NvdSource::class, $this->nginx->id, 'cpe:2.3:a:f5:nginx');
+
+    parse_str((string) parse_url(Http::recorded()->last()[0]->url(), PHP_URL_QUERY), $q);
+    expect([$q['lastModStartDate'], $q['lastModEndDate']])->toBe(['2026-11-19T10:00:00.000Z', '2026-11-19T12:10:00.000Z'])
+        ->and(SyncCursor::sole()->cursor->toIso8601ZuluString())->toBe('2026-11-19T12:10:00Z');
+});

@@ -41,7 +41,9 @@ class NvdSource implements IssueSource
     public function sync(Language $language, string $feed, SyncRun $run): void
     {
         $end = CarbonImmutable::now()->utc();
-        $start = SyncCursor::get('nvd', $feed)?->utc() ?? $end->subDays(config('issues.backfill_days'));
+        // Re-read a while before the cursor: NVD can index a change after its lastModified time.
+        $start = SyncCursor::get('nvd', $feed)?->utc()->subMinutes((int) config('issues.lookback_minutes'))
+            ?? $end->subDays(config('issues.backfill_days'));
 
         for ($from = $start; $from->lessThan($end); $from = $to) {
             $to = $from->addDays(self::MAX_WINDOW_DAYS)->min($end);
