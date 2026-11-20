@@ -6,6 +6,11 @@ Rust, Java, .NET, Ruby, Elixir/Erlang, Dart, nginx and Apache HTTP Server. Each 
 
 - **Sources:** [OSV.dev](https://osv.dev), which includes GitHub Security Advisories (checked every 5 minutes),
   and the [NVD](https://nvd.nist.gov) for the runtimes and servers themselves (checked every 10 minutes).
+- **PHP itself:** php-src's own security advisories on GitHub (every 10 minutes, published with each release, days
+  before NVD), and the php.net news feed (every 5 minutes) for upcoming security releases and advisories.
+- **Advance warnings:** when php.net announces an upcoming security release, PHP followers get an email straight
+  away (with a calendar file) and a banner shows on the site; when it is out, one more email lists the fixed
+  versions and what they fix. Users can switch this off in Email settings.
 - **Accounts:** sign in with Google (or GitHub) or with a code sent by email. The first user is the superadmin.
 - **Emails:**
   - Subscribe per language: straight away, daily or weekly, from a minimum severity.
@@ -123,9 +128,13 @@ site's exact redirect URLs to copy. The NVD key can be saved and tested right on
 ## Cloudflare Tunnel
 
 1. In Cloudflare Zero Trust, go to Networks → Tunnels and create a tunnel (type *Cloudflared*). Copy its token.
-2. Add a public hostname: `bugreports.gekophetweb.nl` → service `HTTP` → `app:8000`.
+2. Add a public hostname: `bugreports.gekophetweb.nl` → service `HTTP` → `app:8000`. This also creates the DNS
+   record. Use `app:8000` even if you changed `APP_PORT`: the tunnel reaches the app inside Docker.
 3. Put the token in `.env` as `CLOUDFLARE_TUNNEL_TOKEN=...` and make sure `APP_URL=https://bugreports.gekophetweb.nl`.
-4. Run `docker compose --profile tunnel up -d`.
+4. Also add `COMPOSE_PROFILES=tunnel` to `.env`. The `cloudflared` container is in the `tunnel` profile, so without
+   this a plain `docker compose up -d` (and `./docker/update.sh`) never starts it and Cloudflare shows the tunnel
+   as down.
+5. Run `docker compose up -d` and check `docker compose logs cloudflared` for "Registered tunnel connection".
 
 `TRUSTED_PROXIES` must stay the `frontend` subnet from `docker-compose.yml` (`172.29.0.0/24`), so the app
 trusts `cloudflared`'s forwarded headers and nobody else's.
@@ -135,6 +144,7 @@ trusts `cloudflared`'s forwarded headers and nobody else's.
 | Setting | Default | What it does |
 |---|---|---|
 | `NVD_API_KEY` | empty | Optional [NVD API key](https://nvd.nist.gov/developers/request-an-api-key): 50 instead of 5 requests per 30 s. A key saved in Admin → Setup wins over this one |
+| `GITHUB_TOKEN` | empty | Optional GitHub token (no scopes needed) for the php-src advisories: 5000 instead of 60 requests an hour |
 | `SYNC_BACKFILL_DAYS` | 90 | How far back the first import of a feed goes |
 | `SYNC_OSV_BATCH` | 1500 | OSV records per run at most; a big first import catches up over several runs |
 | `SYNC_LOOKBACK_MINUTES` | 120 | Each run also re-reads this far before where the last one stopped, for records that reach OSV or NVD late. Records that are already up to date are not fetched again |

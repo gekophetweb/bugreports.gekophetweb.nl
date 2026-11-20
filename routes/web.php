@@ -23,6 +23,8 @@ Route::middleware('signed')->group(function () {
         ->whereNumber('subscription')->name('unsubscribe.subscription');
     Route::match(['get', 'post'], '/unsubscribe/w/{watch}', [UnsubscribeController::class, 'watch'])
         ->whereNumber('watch')->name('unsubscribe.watch');
+    Route::match(['get', 'post'], '/unsubscribe/a/{user}', [UnsubscribeController::class, 'advanceWarnings'])
+        ->whereNumber('user')->name('unsubscribe.advance-warnings');
 });
 
 Route::middleware('auth')->group(function () {

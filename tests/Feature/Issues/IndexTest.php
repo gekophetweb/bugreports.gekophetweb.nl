@@ -4,6 +4,7 @@ use App\Enums\Severity;
 use App\Livewire\Issues\Index;
 use App\Models\Issue;
 use App\Models\Language;
+use App\Models\SyncRun;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -110,4 +111,25 @@ it('paginates by 25', function () {
     }
 
     expect(listed())->toHaveCount(25);
+});
+
+it('shows when each source was last checked successfully', function () {
+    $run = fn (string $source, string $status, int $minutesAgo) => SyncRun::query()->create([
+        'source' => $source, 'feed' => 'feed', 'status' => $status,
+        'started_at' => now()->subMinutes($minutesAgo + 1), 'finished_at' => now()->subMinutes($minutesAgo),
+    ]);
+    $run('osv', 'ok', 30);
+    $run('osv', 'ok', 2);
+    $run('nvd', 'ok', 8);
+    $run('nvd', 'failed', 1);   // a failed run does not count as checked
+    $run('nvd', 'running', 0);
+
+    $this->get('/')->assertOk()
+        ->assertSeeInOrder(['OSV checked', '2 minutes ago'])
+        ->assertSeeInOrder(['NVD checked', '8 minutes ago'])
+        ->assertDontSee('1 minute ago');
+});
+
+it('says when a source has not been checked yet', function () {
+    $this->get('/')->assertOk()->assertSee('OSV not checked yet')->assertSee('NVD not checked yet');
 });

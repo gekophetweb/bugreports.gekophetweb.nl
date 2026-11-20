@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Sources\SyncDispatcher;
 use App\Sources\UpsertResult;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -22,6 +24,21 @@ class SyncRun extends Model
             'started_at' => 'datetime',
             'finished_at' => 'datetime',
         ];
+    }
+
+    /**
+     * When each source last finished a run without errors (null: never), for the "checked … ago" line.
+     *
+     * @return array<string, ?CarbonImmutable> source => finished_at
+     */
+    public static function lastSuccessful(): array
+    {
+        $times = static::query()->where('status', 'ok')->whereNotNull('finished_at')
+            ->groupBy('source')->selectRaw('source, max(finished_at) as finished_at')->pluck('finished_at', 'source');
+
+        return collect(array_keys(SyncDispatcher::SOURCES))
+            ->mapWithKeys(fn (string $source) => [$source => isset($times[$source]) ? CarbonImmutable::parse($times[$source], 'UTC') : null])
+            ->all();
     }
 
     public function language(): BelongsTo

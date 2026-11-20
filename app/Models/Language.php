@@ -10,14 +10,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
  * A programming language or web server we collect issues for. osv_ecosystems are OSV ecosystem names
- * (e.g. "Packagist"); nvd_cpes are NVD virtualMatchString CPEs for the runtime or server itself.
+ * (e.g. "Packagist"); nvd_cpes are NVD virtualMatchString CPEs for the runtime or server itself;
+ * github_repos are repositories whose own security advisories are read (e.g. "php/php-src").
  */
 class Language extends Model
 {
     /** @use HasFactory<LanguageFactory> */
     use HasFactory;
 
-    protected $fillable = ['slug', 'name', 'kind', 'enabled', 'osv_ecosystems', 'nvd_cpes'];
+    protected $fillable = ['slug', 'name', 'kind', 'enabled', 'osv_ecosystems', 'nvd_cpes', 'github_repos'];
 
     protected function casts(): array
     {
@@ -26,6 +27,7 @@ class Language extends Model
             'enabled' => 'boolean',
             'osv_ecosystems' => 'array',
             'nvd_cpes' => 'array',
+            'github_repos' => 'array',
         ];
     }
 

@@ -7,6 +7,7 @@ use App\Enums\SubscriptionFrequency;
 use App\Models\IssueWatch;
 use App\Models\Language;
 use App\Models\Subscription;
+use App\Support\Issues\HiddenPackages;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -22,9 +23,19 @@ class Settings extends Component
 
     public string $name = '';
 
+    public string $newHidden = '';
+
+    public bool $advanceWarnings = true;
+
     public function mount(): void
     {
         $this->name = auth()->user()->name;
+        $this->advanceWarnings = (bool) auth()->user()->advance_warnings;
+    }
+
+    public function updatedAdvanceWarnings(bool $value): void
+    {
+        auth()->user()->update(['advance_warnings' => $value]);
     }
 
     public function subscribe(): void
@@ -68,6 +79,28 @@ class Settings extends Component
         IssueWatch::query()->where(['user_id' => auth()->id(), 'issue_id' => $issueId])->delete();
     }
 
+    public function addHidden(): void
+    {
+        $pattern = HiddenPackages::normalize($this->newHidden);
+        if (! HiddenPackages::isValid($pattern)) {
+            $this->addError('newHidden', 'Enter a package name like silverstripe/framework, or silverstripe/* for a whole vendor.');
+
+            return;
+        }
+        if (count(auth()->user()->hiddenPackages()) >= HiddenPackages::MAX) {
+            $this->addError('newHidden', 'You can hide at most '.HiddenPackages::MAX.' packages. Use vendor/* to hide a whole vendor.');
+
+            return;
+        }
+        auth()->user()->hidePackage($pattern);
+        $this->newHidden = '';
+    }
+
+    public function removeHidden(string $pattern): void
+    {
+        auth()->user()->unhidePackage($pattern);
+    }
+
     public function saveName(): void
     {
         $this->validate(['name' => 'required|string|max:255']);
@@ -96,6 +129,7 @@ class Settings extends Component
             'watched' => $user->watchedIssues()->orderByDesc('issue_watches.created_at')->get(['issues.id', 'external_id', 'title', 'severity']),
             'severities' => array_filter(Severity::cases(), fn ($s) => $s !== Severity::Unknown),
             'frequencies' => SubscriptionFrequency::cases(),
+            'hidden' => $user->hiddenPackages(),
         ]);
     }
 }
