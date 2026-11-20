@@ -1,11 +1,12 @@
 @props(['label', 'name', 'hint' => null])
-<div {{ $attributes->class('space-y-1') }}>
+<div {{ $attributes->class(['space-y-1', 'field--error' => $errors->has($name)]) }}>
     <label for="{{ $name }}" class="block text-sm font-medium">{{ $label }}</label>
-    {{ $slot }}
+    {{-- Hints sit above the control so autocomplete popups and phone keyboards do not cover them. --}}
     @if ($hint)
-        <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ $hint }}</p>
+        <p class="text-xs text-(--muted)">{{ $hint }}</p>
     @endif
+    {{ $slot }}
     @error($name)
-        <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+        <p class="field__error"><span aria-hidden="true">⚠</span> {{ $message }}</p>
     @enderror
 </div>

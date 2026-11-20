@@ -13,35 +13,80 @@
 /*
  * Tokens. Cool paper and ink, one signal blue for actions, and one hue per severity.
  * The severity hues are the only saturated colours on the page.
+ *
+ * Each colour has a light and a dark value. The tokens pick one with light-dark(), which follows
+ * color-scheme (so a subtree can be forced light or dark); browsers without light-dark() get the
+ * prefers-color-scheme fallback below.
  */
 :root {
-    --paper: #f4f6f8;
-    --surface: #ffffff;
-    --ink: #15202b;
-    --muted: #5a6876;
-    --line: #dde3e9;
-    --signal: #1d5bbf;
-    --sev-critical: #b3123a;
-    --sev-high: #c2410c;
-    --sev-medium: #a16207;
-    --sev-low: #456a86;
+    --paper-light: #f4f6f8;        --paper-dark: #0f1720;
+    --surface-light: #ffffff;      --surface-dark: #16212c;
+    --ink-light: #15202b;          --ink-dark: #e6ebf0;
+    --muted-light: #5a6876;        --muted-dark: #94a3b2;
+    --line-light: #dde3e9;         --line-dark: #26333f;
+    --signal-light: #1d5bbf;       --signal-dark: #7aa7f0;
+    --on-signal-light: #ffffff;    --on-signal-dark: #0f1720;
+    --danger-light: #b91c1c;       --danger-dark: #f87171;
+    --ok-light: #15803d;           --ok-dark: #4ade80;
+    --sev-critical-light: #b3123a; --sev-critical-dark: #ff5c7a;
+    --sev-high-light: #c2410c;     --sev-high-dark: #ff8a4c;
+    --sev-medium-light: #a16207;   --sev-medium-dark: #e0b341;
+    --sev-low-light: #456a86;      --sev-low-dark: #8fb3d1;
     --sev-unknown: #8a939c;
-}
 
-@media (prefers-color-scheme: dark) {
-    :root {
-        --paper: #0f1720;
-        --surface: #16212c;
-        --ink: #e6ebf0;
-        --muted: #94a3b2;
-        --line: #26333f;
-        --signal: #7aa7f0;
-        --sev-critical: #ff5c7a;
-        --sev-high: #ff8a4c;
-        --sev-medium: #e0b341;
-        --sev-low: #8fb3d1;
-        --sev-unknown: #8a939c;
+    /* Fallback: browsers without light-dark() */
+    --paper: var(--paper-light);
+    --surface: var(--surface-light);
+    --ink: var(--ink-light);
+    --muted: var(--muted-light);
+    --line: var(--line-light);
+    --signal: var(--signal-light);
+    --on-signal: var(--on-signal-light);
+    --danger: var(--danger-light);
+    --ok: var(--ok-light);
+    --sev-critical: var(--sev-critical-light);
+    --sev-high: var(--sev-high-light);
+    --sev-medium: var(--sev-medium-light);
+    --sev-low: var(--sev-low-light);
+
+    @media (prefers-color-scheme: dark) {
+        --paper: var(--paper-dark);
+        --surface: var(--surface-dark);
+        --ink: var(--ink-dark);
+        --muted: var(--muted-dark);
+        --line: var(--line-dark);
+        --signal: var(--signal-dark);
+        --on-signal: var(--on-signal-dark);
+        --danger: var(--danger-dark);
+        --ok: var(--ok-dark);
+        --sev-critical: var(--sev-critical-dark);
+        --sev-high: var(--sev-high-dark);
+        --sev-medium: var(--sev-medium-dark);
+        --sev-low: var(--sev-low-dark);
     }
+
+    @supports (color: light-dark(white, black)) {
+        --paper: light-dark(var(--paper-light), var(--paper-dark));
+        --surface: light-dark(var(--surface-light), var(--surface-dark));
+        --ink: light-dark(var(--ink-light), var(--ink-dark));
+        --muted: light-dark(var(--muted-light), var(--muted-dark));
+        --line: light-dark(var(--line-light), var(--line-dark));
+        --signal: light-dark(var(--signal-light), var(--signal-dark));
+        --on-signal: light-dark(var(--on-signal-light), var(--on-signal-dark));
+        --danger: light-dark(var(--danger-light), var(--danger-dark));
+        --ok: light-dark(var(--ok-light), var(--ok-dark));
+        --sev-critical: light-dark(var(--sev-critical-light), var(--sev-critical-dark));
+        --sev-high: light-dark(var(--sev-high-light), var(--sev-high-dark));
+        --sev-medium: light-dark(var(--sev-medium-light), var(--sev-medium-dark));
+        --sev-low: light-dark(var(--sev-low-light), var(--sev-low-dark));
+    }
+
+    /* Native UI (scrollbars, form controls, the canvas) follows the user's light or dark setting. */
+    color-scheme: light dark;
+    /* Checkboxes and radios in the signal blue. */
+    accent-color: var(--signal);
+    /* Thumb at 3:1 or more against the track. */
+    scrollbar-color: var(--muted) var(--paper);
 }
 
 body {
@@ -49,13 +94,38 @@ body {
     color: var(--ink);
 }
 
-a:focus-visible,
-button:focus-visible,
-input:focus-visible,
-select:focus-visible,
-summary:focus-visible {
+::selection {
+    background: color-mix(in srgb, var(--signal) 28%, transparent);
+    color: var(--ink);
+}
+
+:focus-visible {
     outline: 2px solid var(--signal);
     outline-offset: 2px;
+}
+
+/* Even line breaks for short headings, no orphaned last words in running text. */
+h1, h2, h3, .feed-head__title, .detail__title, .row__title {
+    text-wrap: balance;
+}
+p, li, dd, .prose-text {
+    text-wrap: pretty;
+}
+
+/* Main navigation: the page or section you are in, shown with weight and an underline, not colour alone. */
+nav[aria-label='Main'] a:is([aria-current='page'], [aria-current='true']) {
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 6px;
+    text-decoration-color: var(--signal);
+}
+
+/* Full page loads cross-fade; wire:navigate swaps keep their own behaviour. */
+@media (prefers-reduced-motion: no-preference) {
+    @view-transition {
+        navigation: auto;
+    }
 }
 
 @layer components {
@@ -65,14 +135,21 @@ summary:focus-visible {
         background: var(--surface);
         color: var(--ink);
     }
+    .input::placeholder { color: var(--muted); opacity: 1; }
+    textarea.input { resize: vertical; }
+
+    /* Errors: after the user left a field (:user-invalid), or from the server (x-field shows the message). */
+    .input:user-invalid,
+    .field--error .input {
+        border-color: var(--danger);
+        background: color-mix(in srgb, var(--danger) 6%, var(--surface));
+    }
+    .field__error { @apply text-sm; color: var(--danger); }
 
     .btn-primary {
         @apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-semibold disabled:opacity-50;
         background: var(--signal);
-        color: #fff;
-    }
-    @media (prefers-color-scheme: dark) {
-        .btn-primary { color: #0f1720; }
+        color: var(--on-signal);
     }
 
     .btn-secondary {
@@ -86,6 +163,12 @@ summary:focus-visible {
         border-color: var(--line);
         background: var(--surface);
     }
+
+    /* Admin sub-navigation: the current page is filled in the ink colour and bold. */
+    .admin-nav { @apply flex flex-wrap gap-2 py-6 text-sm; }
+    .admin-nav__link { @apply rounded-md border border-transparent px-3 py-1.5; }
+    .admin-nav__link:hover { border-color: var(--line); background: var(--surface); }
+    .admin-nav__link[aria-current='page'] { @apply font-semibold; background: var(--ink); color: var(--paper); }
 
     .tag {
         @apply inline-block rounded px-1.5 py-0.5 text-xs font-medium;
@@ -213,7 +296,7 @@ summary:focus-visible {
 
     .status-pill { @apply rounded px-2 py-0.5 text-xs font-semibold; background: color-mix(in srgb, var(--muted) 18%, transparent); }
     .status-pill--in_progress, .status-pill--planned { background: color-mix(in srgb, var(--signal) 18%, transparent); color: var(--signal); }
-    .status-pill--done { background: color-mix(in srgb, #15803d 18%, transparent); color: #15803d; }
+    .status-pill--done { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
     .status-pill--declined { background: var(--ink); color: var(--paper); }
     .withdrawn { @apply rounded px-2 py-0.5 text-xs font-semibold; background: var(--ink); color: var(--paper); }
 }

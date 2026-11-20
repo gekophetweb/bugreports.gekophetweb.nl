@@ -9,11 +9,11 @@
         <p>
             {{ $slot }}
             <span class="sr-only">{{ $done ? '(done)' : ($optional ? '(optional, not set up)' : '(not set up yet)') }}</span>
-            @if (! $done && $optional)<span class="text-sm text-[--muted]">Optional</span>@endif
+            @if (! $done && $optional)<span class="text-sm text-(--muted)">Optional</span>@endif
         </p>
-        @isset($hint)<p class="text-sm text-[--muted]">{{ $hint }}</p>@endisset
+        @isset($hint)<p class="text-sm text-(--muted)">{{ $hint }}</p>@endisset
     </div>
     @if ($href)
-        <a href="{{ $href }}" class="ml-auto shrink-0 text-sm text-[--signal] underline underline-offset-2">{{ $done ? 'Change' : 'Set up' }}</a>
+        <a href="{{ $href }}" class="ml-auto shrink-0 text-sm text-(--signal) underline underline-offset-2">{{ $done ? 'Change' : 'Set up' }}</a>
     @endif
 </li>
