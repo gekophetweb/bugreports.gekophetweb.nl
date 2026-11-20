@@ -1,5 +1,5 @@
 <article class="detail">
-    <a href="{{ route('home') }}" wire:navigate class="text-sm text-[--signal] underline underline-offset-2">All issues</a>
+    <a href="{{ route('home') }}" wire:navigate class="text-sm text-(--signal) underline underline-offset-2">All issues</a>
 
     <header class="detail__head">
         <x-severity-score :issue="$issue" size="lg" />
@@ -28,7 +28,7 @@
             @if ($issue->description)
                 <div class="prose-text">{!! nl2br(e($issue->description)) !!}</div>
             @else
-                <p class="text-[--muted]">The source has no description for this issue.</p>
+                <p class="text-(--muted)">The source has no description for this issue.</p>
             @endif
         </div>
 
@@ -50,11 +50,11 @@
                                 @if ($issue->scope === 'package')
                                     @switch ($this->packageState($package))
                                         @case('used')
-                                            <span class="text-xs text-[--muted]">(you use this)</span>
+                                            <span class="text-xs text-(--muted)">(you use this)</span>
                                             <button type="button" wire:click="unusePackage(@js($package))" class="row__hide">Stop using</button>
                                             @break
                                         @case('hidden')
-                                            <span class="text-xs text-[--muted]">(hidden)</span>
+                                            <span class="text-xs text-(--muted)">(hidden)</span>
                                             <button type="button" wire:click="unhidePackage(@js($package))" class="row__hide">Show again</button>
                                             @break
                                         @default

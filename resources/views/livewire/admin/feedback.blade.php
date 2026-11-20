@@ -18,7 +18,7 @@
                 <div class="flex flex-wrap items-center gap-3">
                     <span class="status-pill status-pill--{{ $f->status->value }}">{{ $f->status->label() }}</span>
                     <span class="text-sm">{{ $f->name }} &lt;{{ $f->email }}&gt;</span>
-                    <span class="text-sm text-[--muted]">{{ $f->type->label() }}, {{ $f->created_at->inDisplayTz()->format('j M Y H:i') }}</span>
+                    <span class="text-sm text-(--muted)">{{ $f->type->label() }}, {{ $f->created_at->inDisplayTz()->format('j M Y H:i') }}</span>
                     @if ($editingId !== $f->id)
                         <button type="button" wire:click="edit({{ $f->id }})" class="ml-auto text-sm underline">Change status</button>
                     @endif
@@ -29,7 +29,7 @@
                 @endif
 
                 @if ($editingId === $f->id)
-                    <form wire:submit="save" class="mt-4 space-y-3 border-t border-[--line] pt-4">
+                    <form wire:submit="save" class="mt-4 space-y-3 border-t border-(--line) pt-4">
                         <x-field label="Status" name="status">
                             <select id="status" wire:model="status" class="input w-auto">
                                 @foreach ($statuses as $s)

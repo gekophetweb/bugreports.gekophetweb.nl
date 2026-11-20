@@ -1,12 +1,12 @@
 <div class="mx-auto max-w-xl py-8">
     <h1 class="feed-head__title">Send feedback</h1>
-    <p class="mt-2 text-[--muted]">Found a problem, missing a language, or have an idea? You get a link to follow what happens with it.</p>
+    <p class="mt-2 text-(--muted)">Found a problem, missing a language, or have an idea? You get a link to follow what happens with it.</p>
 
     @if ($sentStatusUrl)
         <div role="status" class="card mt-6">
             <p class="font-medium">Thanks, we received your feedback.</p>
-            <p class="mt-1 text-sm text-[--muted]">We also emailed you this link. We email you again when the status changes.</p>
-            <a href="{{ $sentStatusUrl }}" class="mt-3 inline-block text-[--signal] underline">Follow its status</a>
+            <p class="mt-1 text-sm text-(--muted)">We also emailed you this link. We email you again when the status changes.</p>
+            <a href="{{ $sentStatusUrl }}" class="mt-3 inline-block text-(--signal) underline">Follow its status</a>
         </div>
     @endif
 

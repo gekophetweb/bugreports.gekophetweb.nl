@@ -9,14 +9,10 @@
         'admin.feedback' => 'Feedback',
     ];
 @endphp
-<nav class="flex flex-wrap gap-2 py-6 text-sm" aria-label="Admin">
+<nav class="admin-nav" aria-label="Admin">
     @foreach ($links as $route => $label)
         @if (Route::has($route))
-            <a href="{{ route($route) }}" @class([
-                'rounded-md px-3 py-1.5',
-                'bg-indigo-600 text-white' => request()->routeIs($route),
-                'hover:bg-zinc-200 dark:hover:bg-zinc-800' => ! request()->routeIs($route),
-            ])>{{ $label }}</a>
+            <a href="{{ route($route) }}" class="admin-nav__link" @if (request()->routeIs($route)) aria-current="page" @endif>{{ $label }}</a>
         @endif
     @endforeach
 </nav>

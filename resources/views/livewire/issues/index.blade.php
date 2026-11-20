@@ -13,7 +13,7 @@
                             <li><label class="inline-flex items-center gap-2"><input type="checkbox" wire:model.live="watched" class="size-4"> Watched issues</label></li>
                             <li><label class="inline-flex items-center gap-2"><input type="checkbox" wire:model.live="starred" class="size-4"> Starred issues</label></li>
                         </ul>
-                        <a href="{{ route('my.settings') }}" wire:navigate class="mt-2 inline-block text-sm text-[--signal] underline underline-offset-2">Manage subscriptions</a>
+                        <a href="{{ route('my.settings') }}" wire:navigate class="mt-2 inline-block text-sm text-(--signal) underline underline-offset-2">Manage subscriptions</a>
                     </fieldset>
                 @endif
             </x-issue-filters>
@@ -80,13 +80,13 @@
         @if ($followsNothing ?? false)
             <div class="empty">
                 <p class="font-medium">You are not following anything yet.</p>
-                <p class="mt-1 text-sm text-[--muted]">Subscribe to the languages and servers you use, or star and watch single issues.</p>
+                <p class="mt-1 text-sm text-(--muted)">Subscribe to the languages and servers you use, or star and watch single issues.</p>
                 <a href="{{ route('my.settings') }}" wire:navigate class="btn-primary mt-4">Choose languages</a>
             </div>
         @elseif ($issues->isEmpty())
             <div class="empty">
                 <p class="font-medium">No issues match these filters.</p>
-                <p class="mt-1 text-sm text-[--muted]">Widen the date range or pick fewer filters. New issues are checked every few minutes.</p>
+                <p class="mt-1 text-sm text-(--muted)">Widen the date range or pick fewer filters. New issues are checked every few minutes.</p>
             </div>
         @else
             <ol class="feed" wire:loading.class="opacity-60">
