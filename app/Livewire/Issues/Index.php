@@ -7,6 +7,7 @@ use App\Livewire\Concerns\TogglesIssueFlags;
 use App\Models\Issue;
 use App\Models\IssueStar;
 use App\Models\Language;
+use App\Models\SyncRun;
 use App\Support\Issues\IssueQuery;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -87,6 +88,7 @@ class Index extends Component
             'severities' => array_filter(Severity::cases(), fn (Severity $s) => $s !== Severity::Unknown),
             'periods' => IssueQuery::PERIODS,
             'heading' => 'Security issues',
+            'lastChecked' => SyncRun::lastSuccessful(),
             ...$this->extraViewData(),
         ]);
     }

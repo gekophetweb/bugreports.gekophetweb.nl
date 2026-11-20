@@ -26,6 +26,17 @@
             <p class="feed-head__count" wire:loading.class="opacity-50">
                 {{ number_format($issues->total()) }} {{ Str::plural('issue', $issues->total()) }}
             </p>
+            <p class="feed-head__sync">
+                @foreach ($lastChecked as $source => $checkedAt)
+                    @unless ($loop->first)<span aria-hidden="true">·</span>@endunless
+                    @if ($checkedAt)
+                        <span>{{ strtoupper($source) }} checked
+                            <time datetime="{{ $checkedAt->toIso8601String() }}" title="{{ $checkedAt->inDisplayTz()->format('j M Y H:i') }}">{{ $checkedAt->diffForHumans() }}</time></span>
+                    @else
+                        <span>{{ strtoupper($source) }} not checked yet</span>
+                    @endif
+                @endforeach
+            </p>
         </header>
 
         @if ($followsNothing ?? false)

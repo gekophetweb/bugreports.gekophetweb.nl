@@ -150,7 +150,8 @@ summary:focus-visible {
     .seg__item--critical input:checked + span { background: var(--sev-critical); border-color: var(--sev-critical); color: #fff; }
     .seg__item--high input:checked + span { background: var(--sev-high); border-color: var(--sev-high); color: #fff; }
 
-    .feed-head { @apply flex items-baseline gap-4 border-b pb-3; border-color: var(--line); }
+    .feed-head { @apply flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b pb-3; border-color: var(--line); }
+    .feed-head__sync { @apply flex w-full flex-wrap gap-x-2 text-xs; color: var(--muted); }
     .feed-head__title {
         font-family: var(--font-narrow);
         font-weight: 700;
