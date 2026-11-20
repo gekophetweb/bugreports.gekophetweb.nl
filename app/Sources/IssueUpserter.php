@@ -29,7 +29,7 @@ class IssueUpserter
                 $issue = $this->sameVulnerability($data);
                 if ($issue) {
                     // An advisory takes over a row that only came from NVD; otherwise merge into the stored row.
-                    $mode = $data->source === 'osv' && $issue->source === 'nvd' ? 'osv-takes-over-nvd' : 'merge';
+                    $mode = $data->source !== 'nvd' && $issue->source === 'nvd' ? 'advisory-takes-over-nvd' : 'merge';
                 }
             }
 
@@ -46,7 +46,7 @@ class IssueUpserter
                 // (an NVD score merged in earlier), and ids merged in earlier stay aliases.
                 'same' => [...$this->attributes($data), ...$this->keepScore($issue, $data), 'aliases' => $this->aliases($issue, $data)],
                 'merge' => [...$this->scoreIfMissing($issue, $data), 'aliases' => $this->aliases($issue, $data)],
-                'osv-takes-over-nvd' => [
+                'advisory-takes-over-nvd' => [
                     ...$this->attributes($data),
                     ...$this->keepScore($issue, $data),
                     'aliases' => $this->aliases($issue, $data, previousId: $issue->external_id),

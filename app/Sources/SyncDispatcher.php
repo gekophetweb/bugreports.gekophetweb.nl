@@ -4,6 +4,7 @@ namespace App\Sources;
 
 use App\Jobs\SyncFeed;
 use App\Models\Language;
+use App\Sources\Ghsa\GithubAdvisorySource;
 use App\Sources\Nvd\NvdSource;
 use App\Sources\Osv\OsvSource;
 use InvalidArgumentException;
@@ -14,6 +15,7 @@ class SyncDispatcher
     public const SOURCES = [
         'osv' => OsvSource::class,
         'nvd' => NvdSource::class,
+        'ghsa' => GithubAdvisorySource::class,
     ];
 
     /** @return int number of jobs queued */

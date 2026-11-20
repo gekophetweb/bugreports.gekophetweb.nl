@@ -7,7 +7,7 @@ use Illuminate\Console\Command;
 
 class SyncSource extends Command
 {
-    protected $signature = 'issues:sync {source : osv or nvd} {--language= : only this language slug}';
+    protected $signature = 'issues:sync {source : osv, nvd or ghsa} {--language= : only this language slug}';
 
     protected $description = 'Queue a sync of every enabled language feed for one source';
 

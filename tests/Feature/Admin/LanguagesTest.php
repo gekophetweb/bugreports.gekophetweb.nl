@@ -48,3 +48,11 @@ it('validates CPEs and slugs', function () {
         ->set('form.slug', 'php')->set('form.name', 'Dup')->set('form.nvd_cpes', 'not-a-cpe')
         ->call('save')->assertHasErrors(['form.slug', 'form.nvd_cpes']);
 });
+
+it('edits and validates GitHub repositories', function () {
+    Livewire::test(Languages::class)->call('edit', $this->php->id)
+        ->set('form.github_repos', 'php/php-src, not a repo')->call('save')->assertHasErrors('form.github_repos')
+        ->set('form.github_repos', 'php/php-src, php/pecl-tools')->call('save')->assertHasNoErrors();
+
+    expect($this->php->fresh()->github_repos)->toBe(['php/php-src', 'php/pecl-tools']);
+});

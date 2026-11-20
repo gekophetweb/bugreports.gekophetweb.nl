@@ -27,6 +27,9 @@ class LanguageSeeder extends Seeder
         ['apache', 'Apache HTTP Server', LanguageKind::Server, [], ['cpe:2.3:a:apache:http_server']],
     ];
 
+    /** Repositories whose own security advisories are read, per language slug. */
+    public const GITHUB_REPOS = ['php' => ['php/php-src']];
+
     public function run(): void
     {
         foreach (self::LANGUAGES as [$slug, $name, $kind, $ecosystems, $cpes]) {
@@ -36,6 +39,7 @@ class LanguageSeeder extends Seeder
                 'enabled' => true,
                 'osv_ecosystems' => $ecosystems,
                 'nvd_cpes' => $cpes,
+                'github_repos' => self::GITHUB_REPOS[$slug] ?? [],
             ]);
         }
     }

@@ -6,6 +6,11 @@ Rust, Java, .NET, Ruby, Elixir/Erlang, Dart, nginx and Apache HTTP Server. Each 
 
 - **Sources:** [OSV.dev](https://osv.dev), which includes GitHub Security Advisories (checked every 5 minutes),
   and the [NVD](https://nvd.nist.gov) for the runtimes and servers themselves (checked every 10 minutes).
+- **PHP itself:** php-src's own security advisories on GitHub (every 10 minutes, published with each release, days
+  before NVD), and the php.net news feed (every 5 minutes) for upcoming security releases and advisories.
+- **Advance warnings:** when php.net announces an upcoming security release, PHP followers get an email straight
+  away (with a calendar file) and a banner shows on the site; when it is out, one more email lists the fixed
+  versions and what they fix. Users can switch this off in Email settings.
 - **Accounts:** sign in with Google (or GitHub) or with a code sent by email. The first user is the superadmin.
 - **Emails:**
   - Subscribe per language: straight away, daily or weekly, from a minimum severity.
@@ -135,6 +140,7 @@ trusts `cloudflared`'s forwarded headers and nobody else's.
 | Setting | Default | What it does |
 |---|---|---|
 | `NVD_API_KEY` | empty | Optional [NVD API key](https://nvd.nist.gov/developers/request-an-api-key): 50 instead of 5 requests per 30 s. A key saved in Admin → Setup wins over this one |
+| `GITHUB_TOKEN` | empty | Optional GitHub token (no scopes needed) for the php-src advisories: 5000 instead of 60 requests an hour |
 | `SYNC_BACKFILL_DAYS` | 90 | How far back the first import of a feed goes |
 | `SYNC_OSV_BATCH` | 1500 | OSV records per run at most; a big first import catches up over several runs |
 | `SYNC_LOOKBACK_MINUTES` | 120 | Each run also re-reads this far before where the last one stopped, for records that reach OSV or NVD late. Records that are already up to date are not fetched again |

@@ -26,7 +26,47 @@
             <p class="feed-head__count" wire:loading.class="opacity-50">
                 {{ number_format($issues->total()) }} {{ Str::plural('issue', $issues->total()) }}
             </p>
+            @if ($hiddenCount > 0 || (! auth()->check() && $hiddenPackages))
+                <div class="feed-head__hidden">
+                    @if ($hiddenCount > 0)
+                        @if ($showHidden)
+                            Showing {{ number_format($hiddenCount) }} from hidden packages ·
+                            <button type="button" wire:click="$set('showHidden', false)" class="underline underline-offset-2">Hide them</button>
+                        @else
+                            {{ number_format($hiddenCount) }} hidden ·
+                            <button type="button" wire:click="$set('showHidden', true)" class="underline underline-offset-2">Show</button>
+                        @endif
+                    @endif
+                    @auth
+                        · <a href="{{ route('my.settings') }}#hidden-heading" wire:navigate class="underline underline-offset-2">Hidden packages</a>
+                    @else
+                        {{-- Visitors have no settings page: their hidden packages, each with a way back. --}}
+                        <ul class="hidden-chips" aria-label="Packages hidden in this browser">
+                            @foreach ($hiddenPackages as $pattern)
+                                <li class="hidden-chips__item">
+                                    <code>{{ $pattern }}</code>
+                                    <button type="button" wire:click="unhidePackage(@js($pattern))" aria-label="Show {{ $pattern }} again" title="Show again">×</button>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endauth
+                </div>
+            @endif
+            <p class="feed-head__sync">
+                @foreach ($lastChecked as $source => $checkedAt)
+                    @unless ($loop->first)<span aria-hidden="true">·</span>@endunless
+                    @if ($checkedAt)
+                        <span>{{ strtoupper($source) }} checked
+                            <time datetime="{{ $checkedAt->toIso8601String() }}" title="{{ $checkedAt->inDisplayTz()->format('j M Y H:i') }}">{{ $checkedAt->diffForHumans() }}</time></span>
+                    @else
+                        <span>{{ strtoupper($source) }} not checked yet</span>
+                    @endif
+                @endforeach
+            </p>
         </header>
+
+        <x-announcement-banner :announcements="$announcements" />
+        <div class="mt-3"><x-status /></div>
 
         @if ($followsNothing ?? false)
             <div class="empty">

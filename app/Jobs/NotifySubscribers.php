@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Enums\Severity;
 use App\Enums\SubscriptionFrequency;
+use App\Models\Announcement;
 use App\Models\Issue;
 use App\Models\IssueChange;
 use App\Models\IssueWatch;
@@ -12,6 +13,7 @@ use App\Models\SyncRun;
 use App\Models\User;
 use App\Notifications\NewIssuesNotification;
 use App\Notifications\WatchedIssuesUpdatedNotification;
+use App\Support\Issues\HiddenPackages;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Collection;
@@ -51,8 +53,15 @@ class NotifySubscribers implements ShouldQueue
             return;
         }
 
-        $this->subscriptionsFor($issues)->each(function (Collection $subs) use ($issues) {
-            $matched = $issues->filter(fn (Issue $issue) => $subs->contains(fn (Subscription $s) => $issue->languages->contains('id', $s->language_id)
+        // Advisories of a release php.net warned about go out in its "it's out" email instead.
+        $held = Announcement::heldIssueIds($issues);
+
+        $this->subscriptionsFor($issues)->each(function (Collection $subs) use ($issues, $held) {
+            $user = $subs->first()->user;
+            $hidden = $user->hiddenPackages();
+            $matched = $issues->filter(fn (Issue $issue) => ! HiddenPackages::hides($hidden, $issue->packages ?? [])
+                && ! ($user->advance_warnings && in_array($issue->id, $held, true))
+                && $subs->contains(fn (Subscription $s) => $issue->languages->contains('id', $s->language_id)
                 && ($s->frequency === SubscriptionFrequency::Instant ? $s->covers($issue) : $issue->severity === Severity::Critical)));
 
             if ($matched->isNotEmpty()) {
@@ -87,8 +96,12 @@ class NotifySubscribers implements ShouldQueue
 
         $critical = $issues->filter(fn (Issue $issue) => $issue->isCriticalUpdateRelevant($previous[$issue->id] ?? $issue->severity));
         foreach ($critical as $issue) {
-            $subs = Subscription::query()->whereIn('language_id', $issue->languages->pluck('id'))->get();
+            $subs = Subscription::query()->with('user')->whereIn('language_id', $issue->languages->pluck('id'))->get();
             foreach ($subs as $sub) {
+                // Watched issues are always mailed; a Critical update is not, when the user hid its packages.
+                if (HiddenPackages::hides($sub->user?->hiddenPackages() ?? [], $issue->packages ?? [])) {
+                    continue;
+                }
                 $perUser[$sub->user_id][$issue->id] ??= $item($issue, 'critical', $sub->unsubscribeUrl());
             }
         }

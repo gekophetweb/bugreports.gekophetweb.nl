@@ -18,6 +18,9 @@ return [
     // Optional NVD API key: 50 instead of 5 requests per 30 seconds.
     'nvd_api_key' => env('NVD_API_KEY'),
 
+    // Optional GitHub token for repository security advisories: 5000 instead of 60 requests an hour.
+    'github_token' => env('GITHUB_TOKEN'),
+
     // Only issues first seen by us and published this many days ago or less are announced as new.
     'announce_days' => 7,
 
