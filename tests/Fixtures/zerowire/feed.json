@@ -1,0 +1,56 @@
+{
+  "version": "https://jsonfeed.org/version/1.1",
+  "title": "Zero Wire | Cloudflare Radar",
+  "home_page_url": "https://radar.cloudflare.com/zero-wire",
+  "feed_url": "https://radar.cloudflare.com/zero-wire/feed?format=json",
+  "items": [
+    {
+      "id": "https://radar.cloudflare.com/zero-wire/php-november-2026-security-release-phpaftershell",
+      "url": "https://radar.cloudflare.com/zero-wire/php-november-2026-security-release-phpaftershell",
+      "title": "phpAfterShell and six other PHP critical flaws",
+      "summary": "Patch PHP now.",
+      "content_text": "Test briefing about critical PHP session flaws.",
+      "date_published": "2026-11-19T00:00:00Z",
+      "date_modified": "2026-11-19T00:00:00Z",
+      "tags": ["Memory corruption", "PHP", "RCE", "Runtime", "Session"],
+      "_zero_wire": {
+        "slug": "php-november-2026-security-release-phpaftershell",
+        "cves": ["CVE-2026-126714", "CVE-2026-129289"],
+        "summary": "Test summary.",
+        "sources": [
+          {"title": "PHP security advisories", "links": [{"label": "Advisory", "url": "https://github.com/php/php-src/security/advisories/GHSA-fm2m-fjf5-v3cp"}, {"label": "Bad", "url": "javascript:alert(1)"}]}
+        ]
+      }
+    },
+    {
+      "id": "https://radar.cloudflare.com/zero-wire/wordpress-7-1-5-template-part-privilege-escalation",
+      "url": "https://radar.cloudflare.com/zero-wire/wordpress-7-1-5-template-part-privilege-escalation",
+      "title": "WordPress 7.1.5: Template Part flaw",
+      "content_text": "Test briefing about a WordPress flaw.",
+      "date_published": "2026-11-18T00:00:00Z",
+      "date_modified": "2026-11-18T00:00:00Z",
+      "tags": ["CMS", "PHP", "RCE"],
+      "_zero_wire": {"slug": "wordpress-7-1-5-template-part-privilege-escalation", "cves": []}
+    },
+    {
+      "id": "https://radar.cloudflare.com/zero-wire/nginx2root",
+      "url": "https://radar.cloudflare.com/zero-wire/nginx2root",
+      "title": "nginx2root: remote code execution in nginx",
+      "content_text": "Test briefing about nginx.",
+      "date_published": "2026-11-18T00:00:00Z",
+      "date_modified": "2026-11-18T00:00:00Z",
+      "tags": ["nginx", "RCE", "Web server"],
+      "_zero_wire": {"slug": "nginx2root", "cves": ["CVE-2026-123007"]}
+    },
+    {
+      "id": "https://radar.cloudflare.com/zero-wire/wordpress-sql-injection-rce",
+      "url": "https://radar.cloudflare.com/zero-wire/wordpress-sql-injection-rce",
+      "title": "WordPress SQL injection and RCE",
+      "content_text": "Old test briefing.",
+      "date_published": "2026-07-17T00:00:00Z",
+      "date_modified": "2026-07-20T00:00:00Z",
+      "tags": ["CMS", "PHP"],
+      "_zero_wire": {"slug": "wordpress-sql-injection-rce", "cves": []}
+    }
+  ]
+}

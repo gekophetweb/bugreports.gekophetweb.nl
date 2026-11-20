@@ -41,12 +41,16 @@ class SendDigest extends Command
             ->whereHas('subscriptions', fn ($q) => $q->where('frequency', $frequency))
             ->with(['subscriptions' => fn ($q) => $q->where('frequency', $frequency)->with('language:id,slug,name')])
             ->chunkById(200, function (Collection $users) use ($frequency, $since, $days, &$sent) {
+                $instant = Subscription::query()->whereIn('user_id', $users->modelKeys())
+                    ->where('frequency', SubscriptionFrequency::Instant)->get()->groupBy('user_id');
                 foreach ($users as $user) {
+                    $newIssues = $this->newIssues($user, $user->subscriptions, $since, $days);
                     $digest = DigestBuilder::build(
                         $this->watchedChanges($user, $since),
-                        $this->newIssues($user, $user->subscriptions, $since, $days),
+                        $newIssues,
                         $this->linkFilters($user->subscriptions, $days),
                         markCriticalAlerted: true,
+                        alertedIds: $this->alreadyEmailed($user, $instant->get($user->id, collect()), $newIssues),
                     );
                     if (! $digest->isEmpty()) {
                         $user->notify(new DigestNotification($digest, $frequency->value, $user->subscriptions->all()));
@@ -77,6 +81,25 @@ class SendDigest extends Command
             ->filter(fn (Issue $issue) => $issue->languages->contains(fn ($l) => $bySlug->has($l->id)
                 && $bySlug[$l->id]->covers($issue) && PackageVisibility::emailable($issue, $user, $bySlug[$l->id])))
             ->values();
+    }
+
+    /**
+     * Issues one of the user's straight-away subscriptions (same language, say Critical straight away
+     * next to High weekly) already emailed. They stay in the digest, marked as already alerted.
+     *
+     * @param  Collection<int, Subscription>  $instant
+     * @param  Collection<int, Issue>  $issues
+     * @return list<int>
+     */
+    private function alreadyEmailed(User $user, Collection $instant, Collection $issues): array
+    {
+        if ($instant->isEmpty()) {
+            return [];
+        }
+
+        return $issues->filter(fn (Issue $issue) => $instant->contains(fn (Subscription $s) => $issue->languages->contains('id', $s->language_id)
+            && $s->covers($issue) && PackageVisibility::emailable($issue, $user, $s)))
+            ->pluck('id')->all();
     }
 
     private function watchedChanges(User $user, $since): Collection

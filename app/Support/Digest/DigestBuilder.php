@@ -18,8 +18,9 @@ class DigestBuilder
      * @param  Collection<int, Issue>  $newIssues
      * @param  array<string, mixed>  $filtersForLink  query for the "and N more" link to My issues
      * @param  bool  $markCriticalAlerted  digests: Critical issues were already emailed straight away
+     * @param  list<int>  $alertedIds  digests: issues another subscription already emailed straight away
      */
-    public static function build(Collection $watchedUpdates, Collection $newIssues, array $filtersForLink, bool $markCriticalAlerted = false): Digest
+    public static function build(Collection $watchedUpdates, Collection $newIssues, array $filtersForLink, bool $markCriticalAlerted = false, array $alertedIds = []): Digest
     {
         $ranked = $newIssues
             ->sort(fn (Issue $a, Issue $b) => [$b->severity->rank(), $b->published_at?->getTimestamp() ?? 0, $b->id]
@@ -27,7 +28,7 @@ class DigestBuilder
             ->values()
             ->map(fn (Issue $issue) => [
                 'issue' => $issue,
-                'alerted' => $markCriticalAlerted && $issue->severity === Severity::Critical,
+                'alerted' => ($markCriticalAlerted && $issue->severity === Severity::Critical) || in_array($issue->id, $alertedIds, true),
             ]);
 
         return new Digest(

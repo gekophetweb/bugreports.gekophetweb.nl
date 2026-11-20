@@ -7,6 +7,7 @@ use App\Models\Language;
 use App\Sources\Ghsa\GithubAdvisorySource;
 use App\Sources\Nvd\NvdSource;
 use App\Sources\Osv\OsvSource;
+use App\Sources\ZeroWire\ZeroWireSource;
 use InvalidArgumentException;
 
 /** Queues one SyncFeed per enabled language and feed of a source. */
@@ -16,6 +17,7 @@ class SyncDispatcher
         'osv' => OsvSource::class,
         'nvd' => NvdSource::class,
         'ghsa' => GithubAdvisorySource::class,
+        'zerowire' => ZeroWireSource::class,
     ];
 
     /** @return int number of jobs queued */
