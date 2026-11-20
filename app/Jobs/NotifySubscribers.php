@@ -13,7 +13,7 @@ use App\Models\SyncRun;
 use App\Models\User;
 use App\Notifications\NewIssuesNotification;
 use App\Notifications\WatchedIssuesUpdatedNotification;
-use App\Support\Issues\HiddenPackages;
+use App\Support\Issues\PackageVisibility;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Collection;
@@ -58,10 +58,9 @@ class NotifySubscribers implements ShouldQueue
 
         $this->subscriptionsFor($issues)->each(function (Collection $subs) use ($issues, $held) {
             $user = $subs->first()->user;
-            $hidden = $user->hiddenPackages();
-            $matched = $issues->filter(fn (Issue $issue) => ! HiddenPackages::hides($hidden, $issue->packages ?? [])
-                && ! ($user->advance_warnings && in_array($issue->id, $held, true))
+            $matched = $issues->filter(fn (Issue $issue) => ! ($user->advance_warnings && in_array($issue->id, $held, true))
                 && $subs->contains(fn (Subscription $s) => $issue->languages->contains('id', $s->language_id)
+                && PackageVisibility::emailable($issue, $user, $s)
                 && ($s->frequency === SubscriptionFrequency::Instant ? $s->covers($issue) : $issue->severity === Severity::Critical)));
 
             if ($matched->isNotEmpty()) {
@@ -98,8 +97,8 @@ class NotifySubscribers implements ShouldQueue
         foreach ($critical as $issue) {
             $subs = Subscription::query()->with('user')->whereIn('language_id', $issue->languages->pluck('id'))->get();
             foreach ($subs as $sub) {
-                // Watched issues are always mailed; a Critical update is not, when the user hid its packages.
-                if (HiddenPackages::hides($sub->user?->hiddenPackages() ?? [], $issue->packages ?? [])) {
+                // Watched issues are always mailed; a Critical update only for packages the subscription covers.
+                if (! $sub->user || ! PackageVisibility::emailable($issue, $sub->user, $sub)) {
                     continue;
                 }
                 $perUser[$sub->user_id][$issue->id] ??= $item($issue, 'critical', $sub->unsubscribeUrl());

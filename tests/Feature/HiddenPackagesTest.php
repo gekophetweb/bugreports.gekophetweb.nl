@@ -97,7 +97,7 @@ it('shows hidden issues on request', function () {
     $list = Livewire::actingAs($user)->withQueryParams(['hidden' => '1'])->test(Index::class);
 
     expect($list->viewData('issues')->pluck('external_id')->all())->toBe(['SS']);
-    $this->actingAs($user)->get('/')->assertSee('1 hidden');
+    $this->actingAs($user)->get('/')->assertSee('1 package issue left out');
 });
 
 it('keeps starred and watched issues visible even when their package is hidden', function () {

@@ -1,4 +1,4 @@
-@props(['issue', 'dateField' => 'published'])
+@props(['issue', 'dateField' => 'published', 'usedPackages' => []])
 @php $date = $dateField === 'modified' ? $issue->modified_at : $issue->published_at; @endphp
 <li class="row" wire:key="issue-{{ $issue->id }}">
     <x-severity-score :issue="$issue" />
@@ -14,10 +14,12 @@
             @foreach ($issue->languages as $language)<span class="tag">{{ $language->name }}</span>@endforeach
             @if ($issue->packages)
                 <span class="row__pkgs">{{ implode(', ', array_slice($issue->packages, 0, 3)) }}@if (count($issue->packages) > 3) and {{ count($issue->packages) - 3 }} more @endif</span>
-                {{-- One package: hide it right here. Several: per package on the issue page. --}}
-                @if (count($issue->packages) === 1)
+                {{-- One package: choose right here. Several: per package on the issue page. --}}
+                @if ($issue->scope === 'package' && count($issue->packages) === 1 && ! \App\Support\Issues\HiddenPackages::uses($usedPackages, $issue->packages))
+                    <button type="button" wire:click="usePackage(@js($issue->packages[0]))" class="row__hide"
+                            title="Always show issues of {{ $issue->packages[0] }}">I use this</button>
                     <button type="button" wire:click="hidePackage(@js($issue->packages[0]))" class="row__hide"
-                            title="Hide issues of {{ $issue->packages[0] }} from your lists and emails">Hide</button>
+                            title="Hide issues of {{ $issue->packages[0] }}, also when showing all">Hide</button>
                 @endif
             @endif
         </p>

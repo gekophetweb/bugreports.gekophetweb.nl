@@ -35,6 +35,7 @@ class NvdMapper
             modifiedAt: $modified,
             withdrawnAt: ($cve['vulnStatus'] ?? null) === 'Rejected' ? ($modified ?? CarbonImmutable::now()) : null,
             languageId: $languageId,
+            scope: 'core',
         );
     }
 

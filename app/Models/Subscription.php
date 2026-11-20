@@ -11,11 +11,11 @@ use Illuminate\Support\Facades\URL;
 /** A user's subscription to one language: new issues at or above min_severity, at the chosen frequency. */
 class Subscription extends Model
 {
-    protected $fillable = ['user_id', 'language_id', 'min_severity', 'frequency'];
+    protected $fillable = ['user_id', 'language_id', 'min_severity', 'frequency', 'all_packages'];
 
     protected function casts(): array
     {
-        return ['min_severity' => Severity::class, 'frequency' => SubscriptionFrequency::class];
+        return ['min_severity' => Severity::class, 'frequency' => SubscriptionFrequency::class, 'all_packages' => 'boolean'];
     }
 
     public function user(): BelongsTo

@@ -25,6 +25,8 @@ class Settings extends Component
 
     public string $newHidden = '';
 
+    public string $newUsed = '';
+
     public bool $advanceWarnings = true;
 
     public function mount(): void
@@ -79,6 +81,29 @@ class Settings extends Component
         IssueWatch::query()->where(['user_id' => auth()->id(), 'issue_id' => $issueId])->delete();
     }
 
+    public function addUsed(): void
+    {
+        $pattern = HiddenPackages::normalize($this->newUsed);
+        if (! HiddenPackages::isValid($pattern)) {
+            $this->addError('newUsed', 'Enter a package name like laravel/framework, or laravel/* for a whole vendor.');
+
+            return;
+        }
+        auth()->user()->usePackage($pattern);
+        $this->newUsed = '';
+    }
+
+    public function removeUsed(string $pattern): void
+    {
+        auth()->user()->unusePackage($pattern);
+    }
+
+    /** Whether a subscription covers all packages of its language, or only the language itself and used packages. */
+    public function setAllPackages(int $id, bool $all): void
+    {
+        $this->own($id)->update(['all_packages' => $all]);
+    }
+
     public function addHidden(): void
     {
         $pattern = HiddenPackages::normalize($this->newHidden);
@@ -130,6 +155,7 @@ class Settings extends Component
             'severities' => array_filter(Severity::cases(), fn ($s) => $s !== Severity::Unknown),
             'frequencies' => SubscriptionFrequency::cases(),
             'hidden' => $user->hiddenPackages(),
+            'used' => $user->usedPackages(),
         ]);
     }
 }

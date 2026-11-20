@@ -13,10 +13,16 @@ use Illuminate\Support\Str;
 /** Maps an OSV record (https://ossf.github.io/osv-schema/) to IssueData. */
 class OsvMapper
 {
+    /** OSV package names for a language's own standard library and tools (Go). */
+    public const STANDARD_LIBRARY = ['stdlib', 'toolchain'];
+
     public function map(array $v, int $languageId): IssueData
     {
         [$severity, $score, $vector] = $this->severity($v);
         $id = (string) $v['id'];
+        $packages = array_values(array_unique(array_filter(array_map(
+            fn ($a) => $a['package']['name'] ?? null, $v['affected'] ?? []
+        ))));
 
         return new IssueData(
             source: 'osv',
@@ -27,15 +33,15 @@ class OsvMapper
             severity: $severity,
             cvssScore: $score,
             cvssVector: $vector,
-            packages: array_values(array_unique(array_filter(array_map(
-                fn ($a) => $a['package']['name'] ?? null, $v['affected'] ?? []
-            )))),
+            packages: $packages,
             references: SafeUrls::filter(array_map(fn ($r) => $r['url'] ?? null, $v['references'] ?? [])),
             sourceUrl: Issue::sourceUrlFor('osv', $id),
             publishedAt: self::date($v['published'] ?? null) ?? self::date($v['modified'] ?? null),
             modifiedAt: self::date($v['modified'] ?? null),
             withdrawnAt: self::date($v['withdrawn'] ?? null),
             languageId: $languageId,
+            // A language's own standard library is the language itself, not a package built on it.
+            scope: $packages !== [] && array_diff($packages, self::STANDARD_LIBRARY) === [] ? 'core' : 'package',
         );
     }
 
