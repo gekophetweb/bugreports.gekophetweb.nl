@@ -8,7 +8,15 @@
             @endforeach
         </div>
     </div>
-    <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">OSV is checked every 5 minutes, NVD every 10. Runs are kept for 14 days.</p>
+    <ul class="mt-2 space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
+        <li><strong class="font-medium">OSV</strong> is checked every 5 minutes, <strong class="font-medium">NVD</strong> and <strong class="font-medium">GHSA</strong> (GitHub repository advisories) every 10.</li>
+        <li>
+            <strong class="font-medium">ZEROWIRE</strong> (Cloudflare Radar Zero Wire) is checked every 30 minutes. It has no fixed schedule:
+            hand-written briefings appear when something serious comes out, from a few a month to several a week, and older
+            briefings are revised as the story develops. Its dates are whole days, so its "synced up to" shows midnight UTC.
+        </li>
+        <li>Runs are kept for 14 days.</li>
+    </ul>
 
     <div class="mt-4"><x-status /></div>
 
