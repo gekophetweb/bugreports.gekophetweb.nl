@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\IssueWatch;
 use App\Models\Subscription;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -39,6 +40,20 @@ class UnsubscribeController
         return view('unsubscribe', [
             'done' => $done,
             'what' => $w ? 'updates about '.$w->issue->external_id : 'these updates',
+            'action' => $request->fullUrl(),
+        ]);
+    }
+
+    public function advanceWarnings(Request $request, int $user): View
+    {
+        $u = User::query()->find($user);
+        if ($request->isMethod('post')) {
+            $u?->update(['advance_warnings' => false]);
+        }
+
+        return view('unsubscribe', [
+            'done' => $request->isMethod('post') || ! $u,
+            'what' => 'advance warnings about upcoming security releases',
             'action' => $request->fullUrl(),
         ]);
     }

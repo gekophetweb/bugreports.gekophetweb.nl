@@ -13,6 +13,7 @@ $displayTz = config('app.display_timezone');
 
 Schedule::command('issues:sync osv')->everyFiveMinutes()->withoutOverlapping()->onOneServer();
 Schedule::command('issues:sync nvd')->everyTenMinutes()->withoutOverlapping()->onOneServer();
+Schedule::command('announcements:sync')->everyFiveMinutes()->withoutOverlapping()->onOneServer();
 Schedule::command('issues:sync ghsa')->everyTenMinutes()->withoutOverlapping()->onOneServer();
 Schedule::command('digest:send daily')->dailyAt('08:00')->timezone($displayTz)->withoutOverlapping()->onOneServer();
 Schedule::command('digest:send weekly')->weeklyOn(1, '08:00')->timezone($displayTz)->withoutOverlapping()->onOneServer();

@@ -51,6 +51,7 @@
             </p>
         </header>
 
+        <x-announcement-banner :announcements="$announcements" />
         <div class="mt-3"><x-status /></div>
 
         @if ($followsNothing ?? false)

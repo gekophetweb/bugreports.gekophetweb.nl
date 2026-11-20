@@ -25,9 +25,17 @@ class Settings extends Component
 
     public string $newHidden = '';
 
+    public bool $advanceWarnings = true;
+
     public function mount(): void
     {
         $this->name = auth()->user()->name;
+        $this->advanceWarnings = (bool) auth()->user()->advance_warnings;
+    }
+
+    public function updatedAdvanceWarnings(bool $value): void
+    {
+        auth()->user()->update(['advance_warnings' => $value]);
     }
 
     public function subscribe(): void

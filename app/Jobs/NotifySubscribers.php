@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Enums\Severity;
 use App\Enums\SubscriptionFrequency;
+use App\Models\Announcement;
 use App\Models\Issue;
 use App\Models\IssueChange;
 use App\Models\IssueWatch;
@@ -52,9 +53,14 @@ class NotifySubscribers implements ShouldQueue
             return;
         }
 
-        $this->subscriptionsFor($issues)->each(function (Collection $subs) use ($issues) {
-            $hidden = $subs->first()->user->hiddenPackages();
+        // Advisories of a release php.net warned about go out in its "it's out" email instead.
+        $held = Announcement::heldIssueIds($issues);
+
+        $this->subscriptionsFor($issues)->each(function (Collection $subs) use ($issues, $held) {
+            $user = $subs->first()->user;
+            $hidden = $user->hiddenPackages();
             $matched = $issues->filter(fn (Issue $issue) => ! HiddenPackages::hides($hidden, $issue->packages ?? [])
+                && ! ($user->advance_warnings && in_array($issue->id, $held, true))
                 && $subs->contains(fn (Subscription $s) => $issue->languages->contains('id', $s->language_id)
                 && ($s->frequency === SubscriptionFrequency::Instant ? $s->covers($issue) : $issue->severity === Severity::Critical)));
 

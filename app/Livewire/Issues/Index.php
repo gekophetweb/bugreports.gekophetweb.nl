@@ -4,6 +4,7 @@ namespace App\Livewire\Issues;
 
 use App\Enums\Severity;
 use App\Livewire\Concerns\TogglesIssueFlags;
+use App\Models\Announcement;
 use App\Models\Issue;
 use App\Models\IssueStar;
 use App\Models\Language;
@@ -115,6 +116,7 @@ class Index extends Component
         return view('livewire.issues.index', [
             'issues' => $issues,
             'hiddenCount' => $hiddenCount,
+            'announcements' => Announcement::forBanner($filters['languages']),
             'filters' => $filters,
             'allLanguages' => Language::query()->enabled()->orderBy('kind')->orderBy('name')->get(['id', 'slug', 'name', 'kind']),
             'severities' => array_filter(Severity::cases(), fn (Severity $s) => $s !== Severity::Unknown),

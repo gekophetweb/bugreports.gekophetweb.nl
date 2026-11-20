@@ -68,6 +68,18 @@
         @endif
     </section>
 
+    <section aria-labelledby="warnings-heading">
+        <h2 id="warnings-heading" class="text-lg font-semibold">Advance warnings</h2>
+        <label class="mt-2 flex items-start gap-3">
+            <input type="checkbox" wire:model.live="advanceWarnings" class="mt-1 size-4">
+            <span>
+                Email me when a language I follow announces an upcoming security release, so I can prepare,
+                and again when it is out. Also for security advisories it publishes.
+                <span class="block text-sm text-[--muted]">For now this covers PHP (php.net). Sent straight away, whatever frequency you picked above.</span>
+            </span>
+        </label>
+    </section>
+
     <section aria-labelledby="hidden-heading">
         <h2 id="hidden-heading" class="text-lg font-semibold">Hidden packages</h2>
         <p class="mt-1 text-sm text-[--muted]">
