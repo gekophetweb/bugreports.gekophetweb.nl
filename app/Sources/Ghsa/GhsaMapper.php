@@ -38,6 +38,7 @@ class GhsaMapper
             modifiedAt: self::date($a['updated_at'] ?? null),
             withdrawnAt: self::date($a['withdrawn_at'] ?? null),
             languageId: $languageId,
+            scope: 'core',
         );
     }
 

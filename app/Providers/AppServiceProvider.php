@@ -30,12 +30,17 @@ class AppServiceProvider extends ServiceProvider
 
         $this->applyRuntimeSettings();
 
-        // Packages a visitor hid in this browser move into their account when they sign in.
+        // Packages a visitor hid or uses in this browser move into their account when they sign in.
         Event::listen(Login::class, function (Login $event) {
-            $fromCookie = HiddenPackages::fromCookie();
-            if ($fromCookie !== [] && $event->user instanceof User) {
-                $event->user->update(['hidden_packages' => HiddenPackages::clean([...$event->user->hiddenPackages(), ...$fromCookie])]);
-                HiddenPackages::forgetCookie();
+            if (! $event->user instanceof User) {
+                return;
+            }
+            foreach ([HiddenPackages::COOKIE => 'hidden_packages', HiddenPackages::USED_COOKIE => 'used_packages'] as $cookie => $column) {
+                $fromCookie = HiddenPackages::fromCookie($cookie);
+                if ($fromCookie !== []) {
+                    $event->user->update([$column => HiddenPackages::clean([...($event->user->{$column} ?? []), ...$fromCookie])]);
+                    HiddenPackages::forgetCookie($cookie);
+                }
             }
         });
 

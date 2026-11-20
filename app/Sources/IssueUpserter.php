@@ -52,6 +52,10 @@ class IssueUpserter
                     'aliases' => $this->aliases($issue, $data, previousId: $issue->external_id),
                 ],
             });
+            // Once a core source (NVD, the project itself) reported it, it is about the language or server.
+            if ($issue->getOriginal('scope') === 'core' || $data->scope === 'core') {
+                $issue->scope = 'core';
+            }
             $changes = $this->meaningfulChanges($issue);
             $issue->save();
             $issue->languages()->syncWithoutDetaching([$data->languageId]);
@@ -127,6 +131,7 @@ class IssueUpserter
             'published_at' => $d->publishedAt,
             'modified_at' => $d->modifiedAt,
             'withdrawn_at' => $d->withdrawnAt,
+            'scope' => $d->scope,
         ];
     }
 

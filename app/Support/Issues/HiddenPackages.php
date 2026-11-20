@@ -2,7 +2,6 @@
 
 namespace App\Support\Issues;
 
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cookie;
 
 /**
@@ -20,6 +19,9 @@ class HiddenPackages
 
     /** Visitors keep their hidden packages in this cookie: a JSON list, encrypted like every cookie. */
     public const COOKIE = 'hidden_packages';
+
+    /** Visitors keep the packages they use in this cookie (same format). */
+    public const USED_COOKIE = 'used_packages';
 
     private const COOKIE_MINUTES = 60 * 24 * 365;
 
@@ -47,22 +49,22 @@ class HiddenPackages
     }
 
     /** @return list<string> the valid patterns in the visitor cookie; anything else in it is ignored */
-    public static function fromCookie(): array
+    public static function fromCookie(string $cookie = self::COOKIE): array
     {
-        $list = json_decode((string) request()->cookie(self::COOKIE, '[]'), true);
+        $list = json_decode((string) request()->cookie($cookie, '[]'), true);
 
         return is_array($list) && array_is_list($list) ? self::clean($list) : [];
     }
 
     /** @param  list<string>  $hidden */
-    public static function queueCookie(array $hidden): void
+    public static function queueCookie(array $hidden, string $cookie = self::COOKIE): void
     {
-        Cookie::queue(self::COOKIE, json_encode(self::clean($hidden)), self::COOKIE_MINUTES);
+        Cookie::queue($cookie, json_encode(self::clean($hidden)), self::COOKIE_MINUTES);
     }
 
-    public static function forgetCookie(): void
+    public static function forgetCookie(string $cookie = self::COOKIE): void
     {
-        Cookie::queue(Cookie::forget(self::COOKIE));
+        Cookie::queue(Cookie::forget($cookie));
     }
 
     /**
@@ -84,6 +86,23 @@ class HiddenPackages
         return true;
     }
 
+    /**
+     * Whether any package of an issue is one someone uses (the opposite rule of hides()).
+     *
+     * @param  list<string>  $used
+     * @param  list<string>  $packages
+     */
+    public static function uses(array $used, array $packages): bool
+    {
+        foreach ($packages as $package) {
+            if (self::matchesAny($used, mb_strtolower((string) $package))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /** @param  list<string>  $hidden */
     private static function matchesAny(array $hidden, string $package): bool
     {
@@ -96,47 +115,5 @@ class HiddenPackages
         }
 
         return false;
-    }
-
-    /**
-     * Limits $query to issues not hidden for this user, or for a visitor ($userId null). A user's starred
-     * and watched issues always stay. With $onlyHidden, it does the opposite (for the "N hidden" count).
-     *
-     * @param  list<string>  $hidden
-     */
-    public static function apply(Builder $query, array $hidden, ?int $userId, bool $onlyHidden = false): Builder
-    {
-        if ($hidden === []) {
-            return $onlyHidden ? $query->whereRaw('false') : $query;
-        }
-
-        $exact = array_values(array_filter($hidden, fn ($p) => ! str_ends_with($p, '/*')));
-        $prefixes = array_values(array_map(
-            fn ($p) => addcslashes(substr($p, 0, -1), '%_\\').'%',
-            array_filter($hidden, fn ($p) => str_ends_with($p, '/*')),
-        ));
-
-        $matches = [];
-        $bindings = [];
-        if ($exact !== []) {
-            $matches[] = 'lower(p.name) in ('.implode(',', array_fill(0, count($exact), '?')).')';
-            array_push($bindings, ...$exact);
-        }
-        foreach ($prefixes as $prefix) {
-            $matches[] = 'lower(p.name) like ?';
-            $bindings[] = $prefix;
-        }
-
-        // Hidden: it has packages and none of them is outside the hidden list ...
-        $sql = 'jsonb_array_length(issues.packages) > 0'
-            .' and not exists (select 1 from jsonb_array_elements_text(issues.packages) as p(name) where not ('.implode(' or ', $matches).'))';
-        // ... and the user did not star or watch it.
-        if ($userId !== null) {
-            $sql .= ' and not exists (select 1 from issue_stars s where s.issue_id = issues.id and s.user_id = ?)'
-                .' and not exists (select 1 from issue_watches w where w.issue_id = issues.id and w.user_id = ?)';
-            array_push($bindings, $userId, $userId);
-        }
-
-        return $onlyHidden ? $query->whereRaw("($sql)", $bindings) : $query->whereRaw("not ($sql)", $bindings);
     }
 }

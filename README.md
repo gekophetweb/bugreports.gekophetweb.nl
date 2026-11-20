@@ -16,6 +16,9 @@ Rust, Java, .NET, Ruby, Elixir/Erlang, Dart, nginx and Apache HTTP Server. Each 
   - Subscribe per language: straight away, daily or weekly, from a minimum severity.
   - New Critical issues, and updates to recent Critical ones, are always sent straight away.
   - Watch single issues to get an email when they change.
+- **Packages are opt-in:** by default you see the languages and servers themselves. Mark the open source
+  packages you use ("I use this", or `laravel/*`) to see their issues too, or pick "All packages" per language
+  you follow. You can also hide packages. Visitors' choices are kept in a cookie; emails follow the same choices.
 - **Your view:** star issues to show them first. My issues shows only what you follow, and every list can be
   filtered by language, severity and date.
 - **Feedback:** a feedback form whose status the sender can follow.

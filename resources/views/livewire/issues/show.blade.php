@@ -46,11 +46,23 @@
                     <ul class="space-y-1">
                         @foreach ($issue->packages as $package)
                             <li>{{ $package }}
-                                @if (\App\Support\Issues\HiddenPackages::hides($this->hiddenPackages(), [$package]))
-                                    <span class="text-xs text-[--muted]">(hidden)</span>
-                                @else
-                                    <button type="button" wire:click="hidePackage(@js($package))" class="row__hide"
-                                            title="Hide issues of {{ $package }} from your lists{{ auth()->check() ? ' and emails' : '' }}">Hide</button>
+                                {{-- The language or server itself is always shown; packages can be used or hidden. --}}
+                                @if ($issue->scope === 'package')
+                                    @switch ($this->packageState($package))
+                                        @case('used')
+                                            <span class="text-xs text-[--muted]">(you use this)</span>
+                                            <button type="button" wire:click="unusePackage(@js($package))" class="row__hide">Stop using</button>
+                                            @break
+                                        @case('hidden')
+                                            <span class="text-xs text-[--muted]">(hidden)</span>
+                                            <button type="button" wire:click="unhidePackage(@js($package))" class="row__hide">Show again</button>
+                                            @break
+                                        @default
+                                            <button type="button" wire:click="usePackage(@js($package))" class="row__hide"
+                                                    title="Show issues of {{ $package }} in your lists{{ auth()->check() ? ' and emails' : '' }}">I use this</button>
+                                            <button type="button" wire:click="hidePackage(@js($package))" class="row__hide"
+                                                    title="Hide issues of {{ $package }}, also where you see all packages">Hide</button>
+                                    @endswitch
                                 @endif
                             </li>
                         @endforeach

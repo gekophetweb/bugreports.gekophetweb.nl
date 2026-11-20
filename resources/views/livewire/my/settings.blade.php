@@ -33,6 +33,12 @@
                                 <option value="{{ $f->value }}" @selected($sub->frequency === $f)>{{ $f->label() }}</option>
                             @endforeach
                         </select>
+                        <label class="sr-only" for="pkgs-{{ $sub->id }}">Which packages for {{ $sub->language->name }}</label>
+                        <select id="pkgs-{{ $sub->id }}" class="input w-auto py-1"
+                                wire:change="setAllPackages({{ $sub->id }}, $event.target.value === '1')">
+                            <option value="0" @selected(! $sub->all_packages)>{{ $sub->language->name }} itself and packages you use</option>
+                            <option value="1" @selected($sub->all_packages)>All packages too</option>
+                        </select>
                         <button type="button" wire:click="unsubscribe({{ $sub->id }})" class="ml-auto text-sm underline">Unsubscribe</button>
                     </li>
                 @endforeach
@@ -80,11 +86,38 @@
         </label>
     </section>
 
+    <section aria-labelledby="packages-heading">
+        <h2 id="packages-heading" class="text-lg font-semibold">Packages you use</h2>
+        <p class="mt-1 text-sm text-[--muted]">
+            Open source packages are left out by default: you see the languages and servers themselves. Issues of
+            these packages are shown in your lists and emails too. Use <code>vendor/*</code> for a whole vendor, or
+            pick "All packages too" for a language above.
+        </p>
+        @if ($used === [])
+            <p class="mt-2 text-sm text-[--muted]">None yet. Use "I use this" next to a package in the issue list, or add one here.</p>
+        @else
+            <ul class="feed mt-3">
+                @foreach ($used as $pattern)
+                    <li wire:key="used-{{ $pattern }}" class="flex items-center gap-3 py-2">
+                        <code>{{ $pattern }}</code>
+                        <button type="button" wire:click="removeUsed(@js($pattern))" class="ml-auto text-sm underline">Remove</button>
+                    </li>
+                @endforeach
+            </ul>
+        @endif
+        <form wire:submit="addUsed" class="mt-3 flex flex-wrap items-end gap-3">
+            <x-field label="Add a package you use" name="newUsed" class="min-w-64 flex-1">
+                <input id="newUsed" type="text" wire:model="newUsed" class="input" placeholder="laravel/framework">
+            </x-field>
+            <button type="submit" class="btn-secondary">Add</button>
+        </form>
+    </section>
+
     <section aria-labelledby="hidden-heading">
         <h2 id="hidden-heading" class="text-lg font-semibold">Hidden packages</h2>
         <p class="mt-1 text-sm text-[--muted]">
-            Issues of these packages are left out of your lists and emails, unless the issue also affects a package
-            you did not hide, or you starred or watched it. Use <code>vendor/*</code> for a whole vendor.
+            Issues of these packages stay out even for a language where you see all packages, unless the issue
+            also affects a package you did not hide, or you starred or watched it. Use <code>vendor/*</code> for a whole vendor.
         </p>
         @if ($hidden === [])
             <p class="mt-2 text-sm text-[--muted]">Nothing hidden. Use "Hide" next to a package in the issue list.</p>
