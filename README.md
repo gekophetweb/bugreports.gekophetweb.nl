@@ -17,22 +17,98 @@ Rust, Java, .NET, Ruby, Elixir/Erlang, Dart, nginx and Apache HTTP Server. Each 
 
 Design: [docs/superpowers/specs/2026-11-19-bugreports-design.md](docs/superpowers/specs/2026-11-19-bugreports-design.md).
 
-## Run it
+## Install with Docker
 
-You need Docker with Compose. The website (`app`, `queue`, `scheduler`) and the database (`db`, PostgreSQL 17)
-run in separate containers. The database and Redis are only on an internal network and are never published.
+The website (`app`, `queue`, `mail-queue`, `scheduler`) and the database (`db`, PostgreSQL 17) run in separate
+containers, next to Redis. The database and Redis are only on an internal network and are never published.
+
+### 1. Install Docker
+
+- **Linux server:** install Docker Engine with the Compose plugin
+  ([docs.docker.com/engine/install](https://docs.docker.com/engine/install/)), then check with
+  `docker compose version`.
+- **Windows or macOS:** install [Docker Desktop](https://www.docker.com/products/docker-desktop/) and start it.
+
+### 2. Get the code
+
+```sh
+git clone https://github.com/gekophetweb/bugreports.gekophetweb.nl.git bugreports
+cd bugreports
+git checkout main            # main holds the releases
+```
+
+### 3. Configure `.env`
 
 ```sh
 cp .env.example .env
-# edit .env: set DB_PASSWORD and REDIS_PASSWORD; APP_URL is your public URL
+```
+
+Change at least these values in `.env`:
+
+| Setting | Set it to |
+|---|---|
+| `DB_PASSWORD` | A long random password, e.g. from `openssl rand -hex 24` |
+| `REDIS_PASSWORD` | Another long random password |
+| `APP_URL` | The public URL, e.g. `https://bugreports.gekophetweb.nl` |
+| `SESSION_SECURE_COOKIE` | `true` behind HTTPS (the tunnel). Use `false` only to try it on `http://127.0.0.1:8000`, or signing in will not work |
+| `APP_PORT` | Only if port 8000 is already taken on the host (`port is already allocated`), e.g. `8080`. The tunnel still uses `app:8000` |
+
+Leave `APP_KEY` empty: the first start generates it into `storage/app/.env.local` in the `app_storage` volume.
+Mail and SSO are set up later in the website, not here.
+
+### 4. Build and start
+
+```sh
 docker compose up -d --build
+docker compose ps            # app should become "healthy" within a minute
+```
+
+The first start migrates the database and adds the languages. The image is built locally, so the first build
+takes a few minutes.
+
+### 5. Create the superadmin
+
+```sh
 docker compose logs app | grep -A1 "No superadmin"
 ```
 
 Open the setup link from the log. It works once and creates the superadmin. Until then nobody can sign in.
-The app listens on `127.0.0.1:8000` only.
+The app listens on `127.0.0.1:8000` only (or the `APP_PORT` you set); to reach it from the internet, set up the
+[Cloudflare Tunnel](#cloudflare-tunnel) below.
 
-Then, as superadmin, start at **Admin → Setup** (where the setup link takes you). It shows what is still missing
+### Update to a new release
+
+```sh
+./docker/update.sh             # does nothing if there is no new release on main
+./docker/update.sh --check     # only says whether an update is available
+./docker/update.sh --force     # back up, rebuild and restart anyway
+```
+
+The script backs up the database to `backups/` (the newest 14 are kept), pulls the new release, rebuilds,
+restarts (migrations run on start) and waits until the app is healthy. If it is not, the script prints how to
+roll back. It refuses to run when the checkout is not on `main` or has local changes.
+
+To update automatically, run it from cron, for example every night at 04:00:
+
+```sh
+crontab -e
+# then add (with the path to your checkout):
+0 4 * * * cd /path/to/bugreports && ./docker/update.sh >> update.log 2>&1
+```
+
+Settings, as environment variables: `UPDATE_BRANCH` (default `main`), `BACKUP_DIR` (`./backups`),
+`KEEP_BACKUPS` (14) and `HEALTH_TIMEOUT` (180 seconds).
+
+### Stop or remove
+
+```sh
+docker compose down            # stops the containers; data stays in the db_data and app_storage volumes
+docker compose down -v         # also DELETES the database and APP_KEY: only to start over from scratch
+```
+
+## First steps as superadmin
+
+Start at **Admin → Setup** (where the setup link takes you). It shows what is still missing
 and has step-by-step guides for creating the Google and GitHub OAuth apps and requesting an NVD API key, with this
 site's exact redirect URLs to copy. The NVD key can be saved and tested right on that page.
 
@@ -61,6 +137,7 @@ trusts `cloudflared`'s forwarded headers and nobody else's.
 | `NVD_API_KEY` | empty | Optional [NVD API key](https://nvd.nist.gov/developers/request-an-api-key): 50 instead of 5 requests per 30 s. A key saved in Admin → Setup wins over this one |
 | `SYNC_BACKFILL_DAYS` | 90 | How far back the first import of a feed goes |
 | `SYNC_OSV_BATCH` | 1500 | OSV records per run at most; a big first import catches up over several runs |
+| `SYNC_LOOKBACK_MINUTES` | 120 | Each run also re-reads this far before where the last one stopped, for records that reach OSV or NVD late. Records that are already up to date are not fetched again |
 | `SYNC_INCLUDE_MALWARE` | false | Also import OSV `MAL-` (malicious package) reports, of which there are hundreds of thousands |
 | `CRITICAL_UPDATE_WINDOW_DAYS` | 90 | Updates to Critical issues go to all language subscribers only for issues this recent |
 | `DISPLAY_TIMEZONE` | Europe/Amsterdam | Times on the site and digest schedules (stored times are UTC) |

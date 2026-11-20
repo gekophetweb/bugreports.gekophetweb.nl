@@ -208,3 +208,50 @@ it('lets the unique lock expire and outlasts the job timeout in redis', function
     expect($job->uniqueFor)->toBe(1800)
         ->and(config('queue.connections.redis.retry_after'))->toBeGreaterThan($job->timeout);
 });
+
+function lateOsv(string $modified): array
+{
+    return ['id' => 'GHSA-late-late-late', 'summary' => 'Late', 'modified' => $modified, 'published' => '2026-11-18T12:00:00Z'];
+}
+
+it('picks up a record that reaches the index late with a timestamp just before the cursor', function () {
+    fakeOsv();
+    runOsv(); // cursor: 2026-11-18T21:00:39Z
+
+    fakeOsv(
+        "2026-11-18T21:00:39.447883165Z,GHSA-82w8-65qw-gch6\n2026-11-18T20:30:00Z,GHSA-late-late-late\n2026-11-10T10:00:00Z,GHSA-v4v4-v4v4-v4v4\n",
+        ['GHSA-late-late-late' => lateOsv('2026-11-18T20:30:00Z')],
+    );
+    $run = runOsv();
+
+    expect($run->created_count)->toBe(1)
+        ->and(Issue::where('external_id', 'GHSA-late-late-late')->exists())->toBeTrue()
+        ->and(SyncCursor::sole()->cursor->toIso8601ZuluString())->toBe('2026-11-18T21:00:39Z');
+});
+
+it('does not look back further than the lookback window', function () {
+    config(['issues.lookback_minutes' => 60]);
+    fakeOsv();
+    runOsv();
+
+    fakeOsv(
+        "2026-11-18T21:00:39.447883165Z,GHSA-82w8-65qw-gch6\n2026-11-18T19:30:00Z,GHSA-late-late-late\n",
+        ['GHSA-late-late-late' => lateOsv('2026-11-18T19:30:00Z')],
+    );
+    runOsv();
+
+    expect(Issue::where('external_id', 'GHSA-late-late-late')->exists())->toBeFalse();
+});
+
+it('does not let records re-read in the lookback window use up the batch', function () {
+    config(['issues.osv_batch' => 1]);
+    // The index lists this record as modified later than the record itself says, so it never looks up to date.
+    fakeOsv(vulns: ['GHSA-v4v4-v4v4-v4v4' => osvJson('GHSA-v4v4-v4v4-v4v4', fn ($d) => [...$d, 'modified' => '2026-11-10T09:00:00Z'])]);
+
+    runOsv();
+    expect(SyncCursor::sole()->cursor->toIso8601ZuluString())->toBe('2026-11-10T10:00:00Z');
+
+    runOsv();
+    expect(Issue::count())->toBe(2)
+        ->and(SyncCursor::sole()->cursor->toIso8601ZuluString())->toBe('2026-11-18T21:00:39Z');
+});

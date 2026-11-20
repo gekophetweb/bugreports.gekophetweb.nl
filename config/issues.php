@@ -8,6 +8,10 @@ return [
     // OSV "MAL-" ids (malicious packages) run to hundreds of thousands; skipped unless switched on.
     'include_malware' => (bool) env('SYNC_INCLUDE_MALWARE', false),
 
+    // Each run re-reads this many minutes before the cursor, for records that reach OSV's index or NVD's
+    // API late with an older timestamp. OSV records whose stored copy is already up to date are not fetched.
+    'lookback_minutes' => (int) env('SYNC_LOOKBACK_MINUTES', 120),
+
     // OSV records fetched per run at most; a large first import catches up over several runs.
     'osv_batch' => (int) env('SYNC_OSV_BATCH', 1500),
 
