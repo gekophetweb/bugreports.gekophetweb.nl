@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\Role;
+use App\Support\Issues\HiddenPackages;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'role', 'email_verified_at'])]
+#[Fillable(['name', 'email', 'role', 'email_verified_at', 'hidden_packages'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -25,6 +26,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'role' => Role::class,
+            'hidden_packages' => 'array',
         ];
     }
 
@@ -62,6 +64,33 @@ class User extends Authenticatable
     public function isWatching(Issue $issue): bool
     {
         return IssueWatch::query()->where(['user_id' => $this->id, 'issue_id' => $issue->id])->exists();
+    }
+
+    /** @return list<string> package names and vendor patterns this user does not want to see */
+    public function hiddenPackages(): array
+    {
+        return array_values($this->hidden_packages ?? []);
+    }
+
+    /** Adds a package or vendor pattern; returns false when it is invalid. */
+    public function hidePackage(string $pattern): bool
+    {
+        $pattern = HiddenPackages::normalize($pattern);
+        if (! HiddenPackages::isValid($pattern)) {
+            return false;
+        }
+        $hidden = $this->hiddenPackages();
+        if (! in_array($pattern, $hidden, true) && count($hidden) < HiddenPackages::MAX) {
+            $this->update(['hidden_packages' => [...$hidden, $pattern]]);
+        }
+
+        return true;
+    }
+
+    public function unhidePackage(string $pattern): void
+    {
+        $pattern = HiddenPackages::normalize($pattern);
+        $this->update(['hidden_packages' => array_values(array_filter($this->hiddenPackages(), fn ($p) => $p !== $pattern))]);
     }
 
     public static function superadminExists(): bool

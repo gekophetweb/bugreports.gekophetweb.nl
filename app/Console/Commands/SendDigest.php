@@ -10,6 +10,7 @@ use App\Models\Subscription;
 use App\Models\User;
 use App\Notifications\DigestNotification;
 use App\Support\Digest\DigestBuilder;
+use App\Support\Issues\HiddenPackages;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 
@@ -43,7 +44,7 @@ class SendDigest extends Command
                 foreach ($users as $user) {
                     $digest = DigestBuilder::build(
                         $this->watchedChanges($user, $since),
-                        $this->newIssues($user->subscriptions, $since, $days),
+                        $this->newIssues($user->subscriptions, $since, $days, $user->hiddenPackages()),
                         $this->linkFilters($user->subscriptions, $days),
                         markCriticalAlerted: true,
                     );
@@ -59,8 +60,11 @@ class SendDigest extends Command
         return self::SUCCESS;
     }
 
-    /** @param  Collection<int, Subscription>  $subs */
-    private function newIssues(Collection $subs, $since, int $days): Collection
+    /**
+     * @param  Collection<int, Subscription>  $subs
+     * @param  list<string>  $hidden  the user's hidden packages
+     */
+    private function newIssues(Collection $subs, $since, int $days, array $hidden): Collection
     {
         $bySlug = $subs->keyBy('language_id');
 
@@ -71,7 +75,8 @@ class SendDigest extends Command
             ->whereHas('languages', fn ($q) => $q->whereIn('languages.id', $subs->pluck('language_id')))
             ->with('languages:id,slug,name')
             ->get()
-            ->filter(fn (Issue $issue) => $issue->languages->contains(fn ($l) => $bySlug->has($l->id) && $bySlug[$l->id]->covers($issue)))
+            ->filter(fn (Issue $issue) => ! HiddenPackages::hides($hidden, $issue->packages ?? [])
+                && $issue->languages->contains(fn ($l) => $bySlug->has($l->id) && $bySlug[$l->id]->covers($issue)))
             ->values();
     }
 

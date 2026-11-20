@@ -42,7 +42,23 @@
                 <div><dt>Also known as</dt><dd>{{ implode(', ', $issue->aliases) }}</dd></div>
             @endif
             @if ($issue->packages)
-                <div><dt>Affected packages</dt><dd>{{ implode(', ', $issue->packages) }}</dd></div>
+                <div><dt>Affected packages</dt><dd>
+                    <ul class="space-y-1">
+                        @foreach ($issue->packages as $package)
+                            <li>{{ $package }}
+                                @auth
+                                    @if (\App\Support\Issues\HiddenPackages::hides(auth()->user()->hiddenPackages(), [$package]))
+                                        <span class="text-xs text-[--muted]">(hidden)</span>
+                                    @else
+                                        <button type="button" wire:click="hidePackage(@js($package))" class="row__hide"
+                                                title="Hide issues of {{ $package }} from your lists and emails">Hide</button>
+                                    @endif
+                                @endauth
+                            </li>
+                        @endforeach
+                    </ul>
+                    <x-status />
+                </dd></div>
             @endif
         </dl>
     </div>

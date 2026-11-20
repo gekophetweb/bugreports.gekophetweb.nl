@@ -12,6 +12,7 @@ use App\Models\SyncRun;
 use App\Models\User;
 use App\Notifications\NewIssuesNotification;
 use App\Notifications\WatchedIssuesUpdatedNotification;
+use App\Support\Issues\HiddenPackages;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Collection;
@@ -52,7 +53,9 @@ class NotifySubscribers implements ShouldQueue
         }
 
         $this->subscriptionsFor($issues)->each(function (Collection $subs) use ($issues) {
-            $matched = $issues->filter(fn (Issue $issue) => $subs->contains(fn (Subscription $s) => $issue->languages->contains('id', $s->language_id)
+            $hidden = $subs->first()->user->hiddenPackages();
+            $matched = $issues->filter(fn (Issue $issue) => ! HiddenPackages::hides($hidden, $issue->packages ?? [])
+                && $subs->contains(fn (Subscription $s) => $issue->languages->contains('id', $s->language_id)
                 && ($s->frequency === SubscriptionFrequency::Instant ? $s->covers($issue) : $issue->severity === Severity::Critical)));
 
             if ($matched->isNotEmpty()) {
@@ -87,8 +90,12 @@ class NotifySubscribers implements ShouldQueue
 
         $critical = $issues->filter(fn (Issue $issue) => $issue->isCriticalUpdateRelevant($previous[$issue->id] ?? $issue->severity));
         foreach ($critical as $issue) {
-            $subs = Subscription::query()->whereIn('language_id', $issue->languages->pluck('id'))->get();
+            $subs = Subscription::query()->with('user')->whereIn('language_id', $issue->languages->pluck('id'))->get();
             foreach ($subs as $sub) {
+                // Watched issues are always mailed; a Critical update is not, when the user hid its packages.
+                if (HiddenPackages::hides($sub->user?->hiddenPackages() ?? [], $issue->packages ?? [])) {
+                    continue;
+                }
                 $perUser[$sub->user_id][$issue->id] ??= $item($issue, 'critical', $sub->unsubscribeUrl());
             }
         }
