@@ -5,6 +5,10 @@
             Choose the languages and servers you use. New Critical issues are always emailed straight away,
             whatever you pick here, and so are updates to recent Critical issues.
         </p>
+        <p class="mt-2 text-[--muted]">
+            You can follow a language more than once, once per frequency: for example PHP Critical straight away
+            and PHP High and up in the weekly digest.
+        </p>
     </header>
 
     <x-status />

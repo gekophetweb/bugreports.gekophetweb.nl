@@ -102,3 +102,19 @@ it('renders the digest email with full, short and overflow parts', function () {
         return str_contains($html, 'and 5 more') && str_contains($html, route('my.issues'));
     });
 });
+
+it('marks issues a straight-away subscription of the same language already emailed', function () {
+    // PHP Critical straight away, PHP Medium and up weekly.
+    $user = digestSubscriber($this->php, SubscriptionFrequency::Weekly, Severity::Medium);
+    Subscription::create(['user_id' => $user->id, 'language_id' => $this->php->id, 'min_severity' => Severity::High, 'frequency' => SubscriptionFrequency::Instant]);
+    $high = seenIssue($this->php, Severity::High, 5);
+    $medium = seenIssue($this->php, Severity::Medium, 5);
+
+    $this->artisan('digest:send weekly');
+
+    Notification::assertSentTo($user, DigestNotification::class, function ($n) use ($high, $medium) {
+        $alerted = collect($n->digest->full)->mapWithKeys(fn ($i) => [$i['issue']->id => $i['alerted']])->all();
+
+        return $alerted === [$high->id => true, $medium->id => false] && count($n->subscriptions) === 1;
+    });
+});

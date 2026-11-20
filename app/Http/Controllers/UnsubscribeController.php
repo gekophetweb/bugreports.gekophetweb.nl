@@ -24,7 +24,7 @@ class UnsubscribeController
 
         return view('unsubscribe', [
             'done' => $done,
-            'what' => $sub ? 'emails about '.$sub->language->name : 'these emails',
+            'what' => $sub ? 'emails about '.$sub->language->name.' ('.$sub->frequency->label().')' : 'these emails',
             'action' => $request->fullUrl(),
         ]);
     }

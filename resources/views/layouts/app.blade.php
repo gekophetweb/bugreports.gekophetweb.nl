@@ -46,7 +46,8 @@
     </main>
     <footer class="mx-auto max-w-7xl px-4 py-10 text-xs text-[--muted]">
         Issues come from <a class="underline" href="https://osv.dev" rel="noopener">OSV.dev</a> (including GitHub Security Advisories)
-        and the <a class="underline" href="https://nvd.nist.gov" rel="noopener">NVD</a>. The source is always the authority.
+        the <a class="underline" href="https://nvd.nist.gov" rel="noopener">NVD</a> and Cloudflare Radar
+        <a class="underline" href="https://radar.cloudflare.com/zero-wire" rel="noopener">Zero Wire</a>. The source is always the authority.
     </footer>
 </body>
 </html>

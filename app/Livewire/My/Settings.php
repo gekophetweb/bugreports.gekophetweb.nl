@@ -46,11 +46,11 @@ class Settings extends Component
         $this->validate([
             'new.language_id' => ['required', 'integer',
                 Rule::exists('languages', 'id')->where('enabled', true),
-                Rule::unique('subscriptions', 'language_id')->where('user_id', $userId)],
+                Rule::unique('subscriptions', 'language_id')->where('user_id', $userId)->where('frequency', $this->new['frequency'])],
             'new.min_severity' => ['required', Rule::in(self::severityValues())],
             'new.frequency' => ['required', Rule::enum(SubscriptionFrequency::class)],
         ], [
-            'new.language_id.unique' => 'You already follow this one. Change it in the list below.',
+            'new.language_id.unique' => 'You already get these emails for this one. Change the severity in the list below.',
             'new.language_id.exists' => 'Pick a language or server from the list.',
         ]);
 
@@ -68,6 +68,13 @@ class Settings extends Component
     {
         $sub = $this->own($id);
         abort_unless(in_array($minSeverity, self::severityValues(), true) && SubscriptionFrequency::tryFrom($frequency), 422);
+        $taken = Subscription::query()->where(['user_id' => $sub->user_id, 'language_id' => $sub->language_id, 'frequency' => $frequency])
+            ->whereKeyNot($sub->id)->exists();
+        if ($taken) {
+            session()->flash('status', 'You already follow '.$sub->language->name.' at that frequency. Change that one instead.');
+
+            return;
+        }
         $sub->update(['min_severity' => $minSeverity, 'frequency' => $frequency]);
     }
 
@@ -149,8 +156,10 @@ class Settings extends Component
         $user = auth()->user();
 
         return view('livewire.my.settings', [
-            'subscriptions' => $user->subscriptions()->with('language:id,name,slug')->get()->sortBy('language.name'),
-            'languages' => Language::query()->enabled()->whereNotIn('id', $user->subscriptions()->pluck('language_id'))->orderBy('name')->get(['id', 'name']),
+            'subscriptions' => $user->subscriptions()->with('language:id,name,slug')->get()
+                ->sortBy(fn (Subscription $s) => [$s->language->name, array_search($s->frequency, SubscriptionFrequency::cases(), true)]),
+            // A language can be followed once per frequency, e.g. Critical straight away and High weekly.
+            'languages' => Language::query()->enabled()->orderBy('name')->get(['id', 'name']),
             'watched' => $user->watchedIssues()->orderByDesc('issue_watches.created_at')->get(['issues.id', 'external_id', 'title', 'severity']),
             'severities' => array_filter(Severity::cases(), fn ($s) => $s !== Severity::Unknown),
             'frequencies' => SubscriptionFrequency::cases(),

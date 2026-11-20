@@ -31,13 +31,37 @@ it('adds a subscription', function () {
         ->and($sub->frequency)->toBe(SubscriptionFrequency::Weekly);
 });
 
-it('rejects a duplicate language and a disabled one', function () {
+it('rejects a language followed at the same frequency and a disabled one', function () {
     Subscription::create(['user_id' => $this->user->id, 'language_id' => $this->php->id, 'min_severity' => Severity::High, 'frequency' => SubscriptionFrequency::Instant]);
     $off = Language::factory()->create(['enabled' => false]);
 
-    Livewire::test(Settings::class)->set('new.language_id', $this->php->id)->call('subscribe')->assertHasErrors('new.language_id');
+    Livewire::test(Settings::class)->set('new.language_id', $this->php->id)->set('new.frequency', 'instant')->call('subscribe')->assertHasErrors('new.language_id');
     Livewire::test(Settings::class)->set('new.language_id', $off->id)->call('subscribe')->assertHasErrors('new.language_id');
     expect(Subscription::count())->toBe(1);
+});
+
+it('follows a language at several frequencies', function () {
+    Livewire::test(Settings::class)
+        ->set('new.language_id', $this->php->id)->set('new.min_severity', 'critical')->set('new.frequency', 'instant')
+        ->call('subscribe')->assertHasNoErrors()
+        ->set('new.language_id', $this->php->id)->set('new.min_severity', 'high')->set('new.frequency', 'weekly')
+        ->call('subscribe')->assertHasNoErrors()
+        ->assertSee('PHP');
+
+    expect(Subscription::query()->orderBy('id')->get()->map(fn ($s) => [$s->min_severity, $s->frequency])->all())->toBe([
+        [Severity::Critical, SubscriptionFrequency::Instant],
+        [Severity::High, SubscriptionFrequency::Weekly],
+    ]);
+});
+
+it('does not move a subscription onto a frequency the language already has', function () {
+    $instant = Subscription::create(['user_id' => $this->user->id, 'language_id' => $this->php->id, 'min_severity' => Severity::Critical, 'frequency' => SubscriptionFrequency::Instant]);
+    $weekly = Subscription::create(['user_id' => $this->user->id, 'language_id' => $this->php->id, 'min_severity' => Severity::High, 'frequency' => SubscriptionFrequency::Weekly]);
+
+    Livewire::test(Settings::class)->call('updateSubscription', $weekly->id, 'high', 'instant');
+
+    expect($weekly->fresh()->frequency)->toBe(SubscriptionFrequency::Weekly)
+        ->and($instant->fresh()->min_severity)->toBe(Severity::Critical);
 });
 
 it('changes and removes a subscription', function () {

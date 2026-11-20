@@ -56,3 +56,10 @@ it('edits and validates GitHub repositories', function () {
 
     expect($this->php->fresh()->github_repos)->toBe(['php/php-src', 'php/pecl-tools']);
 });
+
+it('edits the Zero Wire tags', function () {
+    Livewire::test(Languages::class)->call('edit', $this->php->id)
+        ->set('form.zero_wire_tags', 'PHP, , WordPress')->call('save')->assertHasNoErrors();
+
+    expect($this->php->fresh()->zero_wire_tags)->toBe(['PHP', 'WordPress']);
+});
