@@ -10,7 +10,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-/** Admin → Languages: which languages and servers are synced, and from which OSV ecosystems, NVD CPEs and GitHub repositories. */
+/** Admin → Languages: which languages and servers are synced, and from which OSV ecosystems, NVD CPEs, GitHub repositories and Zero Wire tags. */
 #[Layout('layouts.app')]
 #[Title('Languages')]
 class Languages extends Component
@@ -21,8 +21,8 @@ class Languages extends Component
 
     public bool $editing = false;
 
-    /** @var array{slug: string, name: string, kind: string, osv_ecosystems: string, nvd_cpes: string, github_repos: string} */
-    public array $form = ['slug' => '', 'name' => '', 'kind' => 'language', 'osv_ecosystems' => '', 'nvd_cpes' => '', 'github_repos' => ''];
+    /** @var array{slug: string, name: string, kind: string, osv_ecosystems: string, nvd_cpes: string, github_repos: string, zero_wire_tags: string} */
+    public array $form = ['slug' => '', 'name' => '', 'kind' => 'language', 'osv_ecosystems' => '', 'nvd_cpes' => '', 'github_repos' => '', 'zero_wire_tags' => ''];
 
     public function toggle(int $id): void
     {
@@ -35,7 +35,7 @@ class Languages extends Component
         $this->resetErrorBag();
         $this->editingId = null;
         $this->editing = true;
-        $this->form = ['slug' => '', 'name' => '', 'kind' => 'language', 'osv_ecosystems' => '', 'nvd_cpes' => '', 'github_repos' => ''];
+        $this->form = ['slug' => '', 'name' => '', 'kind' => 'language', 'osv_ecosystems' => '', 'nvd_cpes' => '', 'github_repos' => '', 'zero_wire_tags' => ''];
     }
 
     public function edit(int $id): void
@@ -51,6 +51,7 @@ class Languages extends Component
             'osv_ecosystems' => implode(', ', $language->osv_ecosystems ?? []),
             'nvd_cpes' => implode(', ', $language->nvd_cpes ?? []),
             'github_repos' => implode(', ', $language->github_repos ?? []),
+            'zero_wire_tags' => implode(', ', $language->zero_wire_tags ?? []),
         ];
     }
 
@@ -81,6 +82,7 @@ class Languages extends Component
                     }
                 }
             }],
+            'form.zero_wire_tags' => ['nullable', 'string', 'max:500'],
         ]);
 
         $attributes = [
@@ -90,6 +92,7 @@ class Languages extends Component
             'osv_ecosystems' => self::split($this->form['osv_ecosystems']),
             'nvd_cpes' => self::split($this->form['nvd_cpes']),
             'github_repos' => self::split($this->form['github_repos']),
+            'zero_wire_tags' => self::split($this->form['zero_wire_tags']),
         ];
 
         $this->editingId

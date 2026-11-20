@@ -37,6 +37,9 @@
             <x-field label="GitHub repositories" name="form.github_repos" hint="Comma separated owner/name, for repositories that publish their own security advisories (e.g. php/php-src).">
                 <input id="form.github_repos" type="text" wire:model="form.github_repos" class="input">
             </x-field>
+            <x-field label="Zero Wire tags" name="form.zero_wire_tags" hint="Comma separated tags of Cloudflare Radar Zero Wire briefings that belong here (e.g. PHP). Not case sensitive.">
+                <input id="form.zero_wire_tags" type="text" wire:model="form.zero_wire_tags" class="input">
+            </x-field>
             <div class="flex gap-3">
                 <button type="submit" class="btn-primary">Save</button>
                 <button type="button" wire:click="cancel" class="btn-secondary">Cancel</button>
@@ -48,7 +51,7 @@
         <table class="w-full text-left text-sm">
             <thead class="border-b border-zinc-200 text-xs uppercase text-zinc-500 dark:border-zinc-800">
                 <tr>
-                    <th class="px-4 py-2">Name</th><th class="px-4 py-2">OSV</th><th class="px-4 py-2">NVD</th><th class="px-4 py-2">GitHub</th>
+                    <th class="px-4 py-2">Name</th><th class="px-4 py-2">OSV</th><th class="px-4 py-2">NVD</th><th class="px-4 py-2">GitHub</th><th class="px-4 py-2">Zero Wire</th>
                     <th class="px-4 py-2 text-right">Issues</th><th class="px-4 py-2">Synced</th><th class="px-4 py-2"></th>
                 </tr>
             </thead>
@@ -59,6 +62,7 @@
                         <td class="px-4 py-2">{{ implode(', ', $language->osv_ecosystems ?? []) ?: '–' }}</td>
                         <td class="px-4 py-2 break-all">{{ implode(', ', $language->nvd_cpes ?? []) ?: '–' }}</td>
                         <td class="px-4 py-2">{{ implode(', ', $language->github_repos ?? []) ?: '–' }}</td>
+                        <td class="px-4 py-2">{{ implode(', ', $language->zero_wire_tags ?? []) ?: '–' }}</td>
                         <td class="px-4 py-2 text-right">{{ number_format($language->issues_count) }}</td>
                         <td class="px-4 py-2">
                             <label class="inline-flex items-center gap-2">

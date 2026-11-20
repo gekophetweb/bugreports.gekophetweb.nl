@@ -21,6 +21,7 @@ class LanguageFactory extends Factory
             'osv_ecosystems' => [],
             'nvd_cpes' => [],
             'github_repos' => [],
+            'zero_wire_tags' => [],
         ];
     }
 }

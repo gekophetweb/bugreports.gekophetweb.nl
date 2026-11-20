@@ -30,6 +30,22 @@ class LanguageSeeder extends Seeder
     /** Repositories whose own security advisories are read, per language slug. */
     public const GITHUB_REPOS = ['php' => ['php/php-src']];
 
+    /** Cloudflare Radar Zero Wire tags whose briefings belong to a language, per slug. */
+    public const ZERO_WIRE_TAGS = [
+        'php' => ['PHP'],
+        'python' => ['Python'],
+        'javascript' => ['Node.js'],
+        'go' => ['Go'],
+        'rust' => ['Rust'],
+        'java' => ['Java', 'OpenJDK'],
+        'dotnet' => ['.NET'],
+        'ruby' => ['Ruby'],
+        'elixir' => ['Erlang', 'Elixir'],
+        'dart' => ['Dart'],
+        'nginx' => ['nginx'],
+        'apache' => ['Apache HTTP Server'],
+    ];
+
     public function run(): void
     {
         foreach (self::LANGUAGES as [$slug, $name, $kind, $ecosystems, $cpes]) {
@@ -40,6 +56,7 @@ class LanguageSeeder extends Seeder
                 'osv_ecosystems' => $ecosystems,
                 'nvd_cpes' => $cpes,
                 'github_repos' => self::GITHUB_REPOS[$slug] ?? [],
+                'zero_wire_tags' => self::ZERO_WIRE_TAGS[$slug] ?? [],
             ]);
         }
     }
