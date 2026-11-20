@@ -1,11 +1,11 @@
 <div class="mx-auto max-w-3xl space-y-10 py-8">
     <header>
         <h1 class="feed-head__title">Email settings</h1>
-        <p class="mt-2 text-[--muted]">
+        <p class="mt-2 text-(--muted)">
             Choose the languages and servers you use. New Critical issues are always emailed straight away,
             whatever you pick here, and so are updates to recent Critical issues.
         </p>
-        <p class="mt-2 text-[--muted]">
+        <p class="mt-2 text-(--muted)">
             You can follow a language more than once, once per frequency: for example PHP Critical straight away
             and PHP High and up in the weekly digest.
         </p>
@@ -17,7 +17,7 @@
         <h2 id="subs-heading" class="text-lg font-semibold">Languages and servers you follow</h2>
 
         @if ($subscriptions->isEmpty())
-            <p class="mt-2 text-sm text-[--muted]">None yet. Add one below.</p>
+            <p class="mt-2 text-sm text-(--muted)">None yet. Add one below.</p>
         @else
             <ul class="feed mt-3">
                 @foreach ($subscriptions as $sub)
@@ -85,20 +85,20 @@
             <span>
                 Email me when a language I follow announces an upcoming security release, so I can prepare,
                 and again when it is out. Also for security advisories it publishes.
-                <span class="block text-sm text-[--muted]">For now this covers PHP (php.net). Sent straight away, whatever frequency you picked above.</span>
+                <span class="block text-sm text-(--muted)">For now this covers PHP (php.net). Sent straight away, whatever frequency you picked above.</span>
             </span>
         </label>
     </section>
 
     <section aria-labelledby="packages-heading">
         <h2 id="packages-heading" class="text-lg font-semibold">Packages you use</h2>
-        <p class="mt-1 text-sm text-[--muted]">
+        <p class="mt-1 text-sm text-(--muted)">
             Open source packages are left out by default: you see the languages and servers themselves. Issues of
             these packages are shown in your lists and emails too. Use <code>vendor/*</code> for a whole vendor, or
             pick "All packages too" for a language above.
         </p>
         @if ($used === [])
-            <p class="mt-2 text-sm text-[--muted]">None yet. Use "I use this" next to a package in the issue list, or add one here.</p>
+            <p class="mt-2 text-sm text-(--muted)">None yet. Use "I use this" next to a package in the issue list, or add one here.</p>
         @else
             <ul class="feed mt-3">
                 @foreach ($used as $pattern)
@@ -119,12 +119,12 @@
 
     <section aria-labelledby="hidden-heading">
         <h2 id="hidden-heading" class="text-lg font-semibold">Hidden packages</h2>
-        <p class="mt-1 text-sm text-[--muted]">
+        <p class="mt-1 text-sm text-(--muted)">
             Issues of these packages stay out even for a language where you see all packages, unless the issue
             also affects a package you did not hide, or you starred or watched it. Use <code>vendor/*</code> for a whole vendor.
         </p>
         @if ($hidden === [])
-            <p class="mt-2 text-sm text-[--muted]">Nothing hidden. Use "Hide" next to a package in the issue list.</p>
+            <p class="mt-2 text-sm text-(--muted)">Nothing hidden. Use "Hide" next to a package in the issue list.</p>
         @else
             <ul class="feed mt-3">
                 @foreach ($hidden as $pattern)
@@ -145,9 +145,9 @@
 
     <section aria-labelledby="watch-heading">
         <h2 id="watch-heading" class="text-lg font-semibold">Issues you watch</h2>
-        <p class="mt-1 text-sm text-[--muted]">You get an email when one of these changes. Watch an issue from its page.</p>
+        <p class="mt-1 text-sm text-(--muted)">You get an email when one of these changes. Watch an issue from its page.</p>
         @if ($watched->isEmpty())
-            <p class="mt-2 text-sm text-[--muted]">You are not watching any issues.</p>
+            <p class="mt-2 text-sm text-(--muted)">You are not watching any issues.</p>
         @else
             <ul class="feed mt-3">
                 @foreach ($watched as $issue)
@@ -169,6 +169,6 @@
             </x-field>
             <button type="submit" class="btn-secondary">Save name</button>
         </form>
-        <p class="mt-2 text-sm text-[--muted]">Signed in as {{ auth()->user()->email }}. <a href="{{ route('feedback.mine') }}" wire:navigate class="underline">See your feedback</a>.</p>
+        <p class="mt-2 text-sm text-(--muted)">Signed in as {{ auth()->user()->email }}. <a href="{{ route('feedback.mine') }}" wire:navigate class="underline">See your feedback</a>.</p>
     </section>
 </div>

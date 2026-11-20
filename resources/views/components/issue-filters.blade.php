@@ -25,8 +25,8 @@
         </select>
         @if ($filters['period'] === 'custom')
             <div class="mt-2 grid grid-cols-2 gap-2">
-                <label class="text-xs text-[--muted]">From<input type="date" wire:model.live="from" class="input mt-1"></label>
-                <label class="text-xs text-[--muted]">To<input type="date" wire:model.live="to" class="input mt-1"></label>
+                <label class="text-xs text-(--muted)">From<input type="date" wire:model.live="from" class="input mt-1"></label>
+                <label class="text-xs text-(--muted)">To<input type="date" wire:model.live="to" class="input mt-1"></label>
             </div>
         @endif
         @if ($filters['period'])
@@ -53,5 +53,5 @@
 
     {{ $slot }}
 
-    <button type="button" wire:click="clearFilters" class="text-sm text-[--signal] underline underline-offset-2">Clear filters</button>
+    <button type="button" wire:click="clearFilters" class="text-sm text-(--signal) underline underline-offset-2">Clear filters</button>
 </form>

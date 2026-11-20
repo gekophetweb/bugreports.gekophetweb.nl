@@ -1,7 +1,7 @@
 <div class="pb-12">
     <x-admin-nav />
     <h1 class="feed-head__title">Setup</h1>
-    <p class="mt-2 max-w-2xl text-[--muted]">
+    <p class="mt-2 max-w-2xl text-(--muted)">
         What this site still needs, and how to get the keys for it. You paste the keys on the Mail and Sign-in pages,
         or for NVD right here. Every key is stored encrypted and is never shown again.
     </p>
@@ -10,7 +10,7 @@
 
     <section class="card mt-6 max-w-3xl" aria-labelledby="checklist">
         <h2 id="checklist" class="text-lg font-semibold">Checklist</h2>
-        <ul class="mt-2 divide-y divide-[--line]">
+        <ul class="mt-2 divide-y divide-(--line)">
             <x-setup-check :done="$checks['https']">
                 The site runs on HTTPS
                 <x-slot:hint>APP_URL in .env is {{ $appUrl }}. Sign-in providers only accept the exact address, so set it to the public HTTPS address before creating the keys below.</x-slot:hint>
@@ -36,7 +36,7 @@
 
         <section id="google" aria-labelledby="google-h">
             <h2 id="google-h" class="text-xl font-semibold">Google sign-in</h2>
-            <p class="mt-1 text-sm text-[--muted]">Takes about 5 minutes. You need a Google account; a Google Cloud project is free.</p>
+            <p class="mt-1 text-sm text-(--muted)">Takes about 5 minutes. You need a Google account; a Google Cloud project is free.</p>
             <ol class="guide">
                 <li>Open the <a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener noreferrer">Google Cloud console</a> and create a project, for example <em>bugreports</em>. Make sure it is selected in the top bar.</li>
                 <li>Go to <a href="https://console.cloud.google.com/auth/overview" target="_blank" rel="noopener noreferrer">Google Auth Platform</a> and click <strong>Get started</strong>. Enter the app name and your support email, choose <strong>External</strong> as audience, add your contact email and finish.</li>
@@ -49,12 +49,12 @@
                 <li>Click <strong>Create</strong>. Copy the <strong>Client ID</strong> and <strong>Client secret</strong> into <a href="{{ route('admin.sign-in') }}">Admin → Sign-in</a>, under Google, and save.</li>
                 <li>Sign out and try <strong>Continue with Google</strong> on the sign-in page.</li>
             </ol>
-            <p class="mt-3 text-sm text-[--muted]">If Google says <em>redirect_uri_mismatch</em>, the address above and the one in the console differ, often by http/https or a trailing slash.</p>
+            <p class="mt-3 text-sm text-(--muted)">If Google says <em>redirect_uri_mismatch</em>, the address above and the one in the console differ, often by http/https or a trailing slash.</p>
         </section>
 
         <section id="github" aria-labelledby="github-h">
-            <h2 id="github-h" class="text-xl font-semibold">GitHub sign-in <span class="text-base font-normal text-[--muted]">(optional)</span></h2>
-            <p class="mt-1 text-sm text-[--muted]">Takes about 2 minutes. Handy for developers who would rather not use Google.</p>
+            <h2 id="github-h" class="text-xl font-semibold">GitHub sign-in <span class="text-base font-normal text-(--muted)">(optional)</span></h2>
+            <p class="mt-1 text-sm text-(--muted)">Takes about 2 minutes. Handy for developers who would rather not use Google.</p>
             <ol class="guide">
                 <li>On GitHub, go to <a href="https://github.com/settings/developers" target="_blank" rel="noopener noreferrer">Settings → Developer settings → OAuth Apps</a> and click <strong>New OAuth App</strong>. For an organisation, use the organisation's settings instead.</li>
                 <li>
@@ -72,8 +72,8 @@
         </section>
 
         <section id="nvd" aria-labelledby="nvd-h">
-            <h2 id="nvd-h" class="text-xl font-semibold">NVD API key <span class="text-base font-normal text-[--muted]">(optional, recommended)</span></h2>
-            <p class="mt-1 text-sm text-[--muted]">
+            <h2 id="nvd-h" class="text-xl font-semibold">NVD API key <span class="text-base font-normal text-(--muted)">(optional, recommended)</span></h2>
+            <p class="mt-1 text-sm text-(--muted)">
                 Free. NVD is where the issues for nginx, Apache and the language runtimes come from. Without a key the site
                 waits 6 seconds between NVD requests; with one, 0.6 seconds.
             </p>
@@ -103,7 +103,7 @@
                     @if ($nvdSource === 'site')
                         <button type="button" wire:click="removeNvdKey" wire:confirm="Remove the NVD API key?" class="text-sm underline">Remove key</button>
                     @endif
-                    <span wire:loading wire:target="testNvdKey" class="text-sm text-[--muted]">Asking NVD…</span>
+                    <span wire:loading wire:target="testNvdKey" class="text-sm text-(--muted)">Asking NVD…</span>
                     @if ($nvdTest === 'ok')
                         <span role="status" class="text-sm font-medium text-green-700 dark:text-green-400">NVD accepted the key.</span>
                     @endif

@@ -10,8 +10,8 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-full font-sans antialiased">
-    <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-[--surface] focus:px-3 focus:py-2">Skip to content</a>
-    <header class="border-b border-[--line] bg-[--surface]">
+    <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-(--surface) focus:px-3 focus:py-2">Skip to content</a>
+    <header class="border-b border-(--line) bg-(--surface)">
         <nav class="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3" aria-label="Main">
             <a href="{{ route('home') }}" wire:navigate class="flex items-center gap-2 font-semibold">
                 <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><rect x="1" y="1" width="4" height="18" rx="1" fill="var(--sev-critical)"/><rect x="7" y="5" width="4" height="14" rx="1" fill="var(--sev-high)"/><rect x="13" y="10" width="4" height="9" rx="1" fill="var(--sev-medium)"/></svg>
@@ -19,17 +19,17 @@
             </a>
             <div class="ml-auto flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
                 @if (Route::has('feedback.create'))
-                    <a href="{{ route('feedback.create') }}" wire:navigate>Feedback</a>
+                    <a href="{{ route('feedback.create') }}" wire:navigate @if (request()->routeIs('feedback.*')) aria-current="true" @endif>Feedback</a>
                 @endif
                 @auth
                     @if (Route::has('my.issues'))
-                        <a href="{{ route('my.issues') }}" wire:navigate>My issues</a>
+                        <a href="{{ route('my.issues') }}" wire:navigate @if (request()->routeIs('my.issues')) aria-current="page" @endif>My issues</a>
                     @endif
                     @if (Route::has('my.settings'))
-                        <a href="{{ route('my.settings') }}" wire:navigate>Settings</a>
+                        <a href="{{ route('my.settings') }}" wire:navigate @if (request()->routeIs('my.settings')) aria-current="page" @endif>Settings</a>
                     @endif
                     @if (auth()->user()->isSuperadmin())
-                        <a href="{{ route('admin.setup') }}" wire:navigate>Admin</a>
+                        <a href="{{ route('admin.setup') }}" wire:navigate @if (request()->routeIs('admin.*')) aria-current="true" @endif>Admin</a>
                     @endif
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
@@ -44,7 +44,7 @@
     <main id="main" class="mx-auto max-w-7xl px-4">
         {{ $slot }}
     </main>
-    <footer class="mx-auto max-w-7xl px-4 py-10 text-xs text-[--muted]">
+    <footer class="mx-auto max-w-7xl px-4 py-10 text-xs text-(--muted)">
         Issues come from <a class="underline" href="https://osv.dev" rel="noopener">OSV.dev</a> (including GitHub Security Advisories)
         the <a class="underline" href="https://nvd.nist.gov" rel="noopener">NVD</a> and Cloudflare Radar
         <a class="underline" href="https://radar.cloudflare.com/zero-wire" rel="noopener">Zero Wire</a>. The source is always the authority.
