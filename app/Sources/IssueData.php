@@ -29,5 +29,7 @@ final readonly class IssueData
         public ?CarbonImmutable $modifiedAt,
         public ?CarbonImmutable $withdrawnAt,
         public int $languageId,
+        /** core: the language or server itself; package: a package built on it */
+        public string $scope = 'package',
     ) {}
 }

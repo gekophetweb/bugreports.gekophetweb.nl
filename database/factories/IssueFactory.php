@@ -24,6 +24,7 @@ class IssueFactory extends Factory
             'cvss_score' => 7.5,
             'cvss_vector' => 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H',
             'packages' => ['vendor/package'],
+            'scope' => 'core',
             'references' => [],
             'source_url' => Issue::sourceUrlFor('osv', $id),
             'published_at' => $published,

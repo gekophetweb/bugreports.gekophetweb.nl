@@ -17,7 +17,7 @@ class Issue extends Model
 
     protected $fillable = [
         'source', 'external_id', 'aliases', 'title', 'description', 'severity', 'cvss_score', 'cvss_vector',
-        'packages', 'references', 'source_url', 'published_at', 'modified_at', 'withdrawn_at', 'first_seen_at',
+        'packages', 'references', 'source_url', 'published_at', 'modified_at', 'withdrawn_at', 'first_seen_at', 'scope',
     ];
 
     protected function casts(): array

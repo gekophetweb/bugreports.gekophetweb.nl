@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'role', 'email_verified_at', 'hidden_packages', 'advance_warnings'])]
+#[Fillable(['name', 'email', 'role', 'email_verified_at', 'hidden_packages', 'advance_warnings', 'used_packages'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -27,6 +27,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'role' => Role::class,
             'hidden_packages' => 'array',
+            'used_packages' => 'array',
             'advance_warnings' => 'boolean',
         ];
     }
@@ -92,6 +93,29 @@ class User extends Authenticatable
     {
         $pattern = HiddenPackages::normalize($pattern);
         $this->update(['hidden_packages' => array_values(array_filter($this->hiddenPackages(), fn ($p) => $p !== $pattern))]);
+    }
+
+    /** @return list<string> packages this user uses: their issues show although packages are hidden by default */
+    public function usedPackages(): array
+    {
+        return array_values($this->used_packages ?? []);
+    }
+
+    public function usePackage(string $pattern): bool
+    {
+        $pattern = HiddenPackages::normalize($pattern);
+        if (! HiddenPackages::isValid($pattern)) {
+            return false;
+        }
+        $this->update(['used_packages' => HiddenPackages::clean([...$this->usedPackages(), $pattern])]);
+
+        return true;
+    }
+
+    public function unusePackage(string $pattern): void
+    {
+        $pattern = HiddenPackages::normalize($pattern);
+        $this->update(['used_packages' => array_values(array_filter($this->usedPackages(), fn ($p) => $p !== $pattern))]);
     }
 
     public static function superadminExists(): bool

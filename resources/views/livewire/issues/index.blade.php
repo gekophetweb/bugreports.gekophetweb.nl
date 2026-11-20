@@ -26,32 +26,41 @@
             <p class="feed-head__count" wire:loading.class="opacity-50">
                 {{ number_format($issues->total()) }} {{ Str::plural('issue', $issues->total()) }}
             </p>
-            @if ($hiddenCount > 0 || (! auth()->check() && $hiddenPackages))
-                <div class="feed-head__hidden">
+            <div class="feed-head__hidden">
+                @if ($showHidden)
+                    Showing everything, also packages ·
+                    <button type="button" wire:click="$set('showHidden', false)" class="underline underline-offset-2">Only languages, servers and packages you use</button>
+                @else
+                    Languages and servers{{ $usedPackages ? ', and packages you use' : '' }}.
                     @if ($hiddenCount > 0)
-                        @if ($showHidden)
-                            Showing {{ number_format($hiddenCount) }} from hidden packages ·
-                            <button type="button" wire:click="$set('showHidden', false)" class="underline underline-offset-2">Hide them</button>
-                        @else
-                            {{ number_format($hiddenCount) }} hidden ·
-                            <button type="button" wire:click="$set('showHidden', true)" class="underline underline-offset-2">Show</button>
-                        @endif
+                        {{ number_format($hiddenCount) }} package {{ Str::plural('issue', $hiddenCount) }} left out ·
+                        <button type="button" wire:click="$set('showHidden', true)" class="underline underline-offset-2">Show all</button>
                     @endif
-                    @auth
-                        · <a href="{{ route('my.settings') }}#hidden-heading" wire:navigate class="underline underline-offset-2">Hidden packages</a>
-                    @else
-                        {{-- Visitors have no settings page: their hidden packages, each with a way back. --}}
-                        <ul class="hidden-chips" aria-label="Packages hidden in this browser">
-                            @foreach ($hiddenPackages as $pattern)
-                                <li class="hidden-chips__item">
-                                    <code>{{ $pattern }}</code>
-                                    <button type="button" wire:click="unhidePackage(@js($pattern))" aria-label="Show {{ $pattern }} again" title="Show again">×</button>
-                                </li>
+                @endif
+                @auth
+                    · <a href="{{ route('my.settings') }}#packages-heading" wire:navigate class="underline underline-offset-2">Your packages</a>
+                @else
+                    {{-- Visitors have no settings page: their lists, each entry with a way back. --}}
+                    @if ($usedPackages)
+                        <ul class="hidden-chips" aria-label="Packages you use, in this browser">
+                            <li class="text-xs">You use:</li>
+                            @foreach ($usedPackages as $pattern)
+                                <li class="hidden-chips__item"><code>{{ $pattern }}</code>
+                                    <button type="button" wire:click="unusePackage(@js($pattern))" aria-label="Stop showing {{ $pattern }}" title="Stop showing">×</button></li>
                             @endforeach
                         </ul>
-                    @endauth
-                </div>
-            @endif
+                    @endif
+                    @if ($hiddenPackages)
+                        <ul class="hidden-chips" aria-label="Packages hidden in this browser">
+                            <li class="text-xs">Hidden:</li>
+                            @foreach ($hiddenPackages as $pattern)
+                                <li class="hidden-chips__item"><code>{{ $pattern }}</code>
+                                    <button type="button" wire:click="unhidePackage(@js($pattern))" aria-label="Show {{ $pattern }} again" title="Show again">×</button></li>
+                            @endforeach
+                        </ul>
+                    @endif
+                @endauth
+            </div>
             <p class="feed-head__sync">
                 @foreach ($lastChecked as $source => $checkedAt)
                     @unless ($loop->first)<span aria-hidden="true">·</span>@endunless
@@ -82,7 +91,7 @@
         @else
             <ol class="feed" wire:loading.class="opacity-60">
                 @foreach ($issues as $issue)
-                    <x-issue-row :issue="$issue" :date-field="$filters['date_field']" />
+                    <x-issue-row :issue="$issue" :date-field="$filters['date_field']" :used-packages="$usedPackages" />
                 @endforeach
             </ol>
             <div class="mt-6">{{ $issues->links() }}</div>
