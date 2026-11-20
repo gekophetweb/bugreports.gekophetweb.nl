@@ -8,6 +8,7 @@ use App\Models\Issue;
 use App\Models\IssueStar;
 use App\Models\Language;
 use App\Models\SyncRun;
+use App\Support\Issues\HiddenPackages;
 use App\Support\Issues\IssueQuery;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -44,6 +45,10 @@ class Index extends Component
     #[Url(except: '')]
     public string $q = '';
 
+    /** Also show issues whose packages the signed-in user hid. */
+    #[Url(as: 'hidden', except: false)]
+    public bool $showHidden = false;
+
     public function updated(): void
     {
         $this->resetPage();
@@ -60,6 +65,21 @@ class Index extends Component
     {
         $issue = Issue::query()->findOrFail($issueId);
         $this->flip(IssueStar::class, $issue, url()->previous() ?: route('home'));
+    }
+
+    /** Hides issues of this package for the signed-in user, on the site and in emails. */
+    public function hidePackage(string $package): void
+    {
+        $user = auth()->user();
+        if (! $user) {
+            session()->put('url.intended', url()->previous() ?: route('home'));
+            $this->redirectRoute('login');
+
+            return;
+        }
+        if ($user->hidePackage($package)) {
+            session()->flash('status', 'Issues of '.HiddenPackages::normalize($package).' are hidden now. Undo in Email settings.');
+        }
     }
 
     /** @return array<string, mixed> */
@@ -79,10 +99,22 @@ class Index extends Component
     public function render()
     {
         $filters = $this->filters();
-        $issues = IssueQuery::apply($this->baseQuery()->with('languages:id,slug,name'), $filters, auth()->user())->paginate(25);
+        $user = auth()->user();
+        $hidden = $user?->hiddenPackages() ?? [];
+        $query = $this->baseQuery();
+        $hiddenCount = 0;
+        if ($hidden !== []) {
+            $hiddenCount = IssueQuery::apply(HiddenPackages::apply($this->baseQuery(), $hidden, $user->id, onlyHidden: true), $filters)
+                ->toBase()->getCountForPagination();
+            if (! $this->showHidden) {
+                HiddenPackages::apply($query, $hidden, $user->id);
+            }
+        }
+        $issues = IssueQuery::apply($query->with('languages:id,slug,name'), $filters, $user)->paginate(25);
 
         return view('livewire.issues.index', [
             'issues' => $issues,
+            'hiddenCount' => $hiddenCount,
             'filters' => $filters,
             'allLanguages' => Language::query()->enabled()->orderBy('kind')->orderBy('name')->get(['id', 'slug', 'name', 'kind']),
             'severities' => array_filter(Severity::cases(), fn (Severity $s) => $s !== Severity::Unknown),

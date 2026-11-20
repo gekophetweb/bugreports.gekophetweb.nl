@@ -68,6 +68,32 @@
         @endif
     </section>
 
+    <section aria-labelledby="hidden-heading">
+        <h2 id="hidden-heading" class="text-lg font-semibold">Hidden packages</h2>
+        <p class="mt-1 text-sm text-[--muted]">
+            Issues of these packages are left out of your lists and emails, unless the issue also affects a package
+            you did not hide, or you starred or watched it. Use <code>vendor/*</code> for a whole vendor.
+        </p>
+        @if ($hidden === [])
+            <p class="mt-2 text-sm text-[--muted]">Nothing hidden. Use "Hide" next to a package in the issue list.</p>
+        @else
+            <ul class="feed mt-3">
+                @foreach ($hidden as $pattern)
+                    <li wire:key="hidden-{{ $pattern }}" class="flex items-center gap-3 py-2">
+                        <code>{{ $pattern }}</code>
+                        <button type="button" wire:click="removeHidden(@js($pattern))" class="ml-auto text-sm underline">Show again</button>
+                    </li>
+                @endforeach
+            </ul>
+        @endif
+        <form wire:submit="addHidden" class="mt-3 flex flex-wrap items-end gap-3">
+            <x-field label="Hide a package" name="newHidden" class="min-w-64 flex-1">
+                <input id="newHidden" type="text" wire:model="newHidden" class="input" placeholder="silverstripe/framework">
+            </x-field>
+            <button type="submit" class="btn-secondary">Hide</button>
+        </form>
+    </section>
+
     <section aria-labelledby="watch-heading">
         <h2 id="watch-heading" class="text-lg font-semibold">Issues you watch</h2>
         <p class="mt-1 text-sm text-[--muted]">You get an email when one of these changes. Watch an issue from its page.</p>

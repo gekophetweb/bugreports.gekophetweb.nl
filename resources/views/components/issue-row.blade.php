@@ -14,6 +14,11 @@
             @foreach ($issue->languages as $language)<span class="tag">{{ $language->name }}</span>@endforeach
             @if ($issue->packages)
                 <span class="row__pkgs">{{ implode(', ', array_slice($issue->packages, 0, 3)) }}@if (count($issue->packages) > 3) and {{ count($issue->packages) - 3 }} more @endif</span>
+                {{-- One package: hide it right here. Several: per package on the issue page. --}}
+                @if (count($issue->packages) === 1)
+                    <button type="button" wire:click="hidePackage(@js($issue->packages[0]))" class="row__hide"
+                            title="Hide issues of {{ $issue->packages[0] }} from your lists and emails">Hide</button>
+                @endif
             @endif
         </p>
     </div>

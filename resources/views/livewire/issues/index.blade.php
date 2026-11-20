@@ -26,6 +26,18 @@
             <p class="feed-head__count" wire:loading.class="opacity-50">
                 {{ number_format($issues->total()) }} {{ Str::plural('issue', $issues->total()) }}
             </p>
+            @if ($hiddenCount > 0)
+                <p class="feed-head__hidden">
+                    @if ($showHidden)
+                        Showing {{ number_format($hiddenCount) }} from hidden packages ·
+                        <button type="button" wire:click="$set('showHidden', false)" class="underline underline-offset-2">Hide them</button>
+                    @else
+                        {{ number_format($hiddenCount) }} hidden ·
+                        <button type="button" wire:click="$set('showHidden', true)" class="underline underline-offset-2">Show</button>
+                    @endif
+                    · <a href="{{ route('my.settings') }}#hidden-heading" wire:navigate class="underline underline-offset-2">Hidden packages</a>
+                </p>
+            @endif
             <p class="feed-head__sync">
                 @foreach ($lastChecked as $source => $checkedAt)
                     @unless ($loop->first)<span aria-hidden="true">·</span>@endunless
@@ -38,6 +50,8 @@
                 @endforeach
             </p>
         </header>
+
+        <div class="mt-3"><x-status /></div>
 
         @if ($followsNothing ?? false)
             <div class="empty">

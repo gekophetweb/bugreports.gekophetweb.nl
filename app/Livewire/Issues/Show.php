@@ -3,6 +3,7 @@
 namespace App\Livewire\Issues;
 
 use App\Models\Issue;
+use App\Support\Issues\HiddenPackages;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -26,6 +27,16 @@ class Show extends Component
         }
 
         $this->issue = $issue->load('languages:id,slug,name');
+    }
+
+    /** Hides issues of this package for the signed-in user, on the site and in emails. */
+    public function hidePackage(string $package): void
+    {
+        $user = auth()->user();
+        abort_unless($user, 403);
+        if ($user->hidePackage($package)) {
+            session()->flash('status', 'Issues of '.HiddenPackages::normalize($package).' are hidden from your lists and emails. Undo in Email settings.');
+        }
     }
 
     public function render()
